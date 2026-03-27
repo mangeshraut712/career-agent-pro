@@ -12,7 +12,7 @@
 
 ### Your AI-Powered Career Co-Pilot
 
-*Automate job search, optimize resumes with AI, and land your dream role*
+_Automate job search, optimize resumes with AI, and land your dream role_
 
 [🌐 Live Demo](https://ai-job-helper-steel.vercel.app) · [📖 Documentation](#-features) · [🚀 Quick Start](#-quick-start) · [💡 Examples](#-examples)
 
@@ -74,14 +74,14 @@
 
 <div align="center">
 
-| Problem | CareerAgentPro Solution |
-|---------|------------------------|
-| ⏰ **Hours spent customizing resumes** | ⚡ AI generates tailored versions in seconds |
-| 📝 **Generic cover letters that don't stand out** | ✨ Personalized letters based on job & your experience |
-| 🤷 **No idea if you're a good fit for a role** | 📊 Deep analysis with competency matching & gap identification |
-| 😰 **Applying to 100s of jobs manually** | 🤖 Automated workflows for applications & outreach |
-| 📉 **ATS rejection without knowing why** | 🎯 Real-time ATS optimization & scoring |
-| 🔍 **Lost track of applications** | 📋 Centralized dashboard for all job tracking |
+| Problem                                           | CareerAgentPro Solution                                        |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| ⏰ **Hours spent customizing resumes**            | ⚡ AI generates tailored versions in seconds                   |
+| 📝 **Generic cover letters that don't stand out** | ✨ Personalized letters based on job & your experience         |
+| 🤷 **No idea if you're a good fit for a role**    | 📊 Deep analysis with competency matching & gap identification |
+| 😰 **Applying to 100s of jobs manually**          | 🤖 Automated workflows for applications & outreach             |
+| 📉 **ATS rejection without knowing why**          | 🎯 Real-time ATS optimization & scoring                        |
+| 🔍 **Lost track of applications**                 | 📋 Centralized dashboard for all job tracking                  |
 
 </div>
 
@@ -90,6 +90,7 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 <p align="left">
   <img src="https://img.shields.io/badge/Next.js-16.1-black?style=flat-square&logo=next.js" alt="Next.js"/>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React"/>
@@ -99,6 +100,7 @@
 </p>
 
 ### Backend
+
 <p align="left">
   <img src="https://img.shields.io/badge/FastAPI-0.116-009688?style=flat-square&logo=fastapi" alt="FastAPI"/>
   <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python" alt="Python"/>
@@ -110,6 +112,7 @@
 </p>
 
 ### Real-Time & Streaming
+
 <p align="left">
   <img src="https://img.shields.io/badge/SSE-Streaming_Responses-green?style=flat-square" alt="SSE"/>
   <img src="https://img.shields.io/badge/LangChain-Chains_+_Structured_Output-blue?style=flat-square" alt="LangChain Chains"/>
@@ -117,6 +120,7 @@
 </p>
 
 ### Deployment & Tools
+
 <p align="left">
   <img src="https://img.shields.io/badge/Vercel-Production-black?style=flat-square&logo=vercel" alt="Vercel"/>
   <img src="https://img.shields.io/badge/Git-Version_Control-F05032?style=flat-square&logo=git" alt="Git"/>
@@ -130,6 +134,7 @@
 ### Prerequisites
 
 Before you begin, ensure you have:
+
 - ✅ **Python 3.12+** ([Download](https://www.python.org/downloads/))
 - ✅ **Node.js 18+** ([Download](https://nodejs.org/))
 - ✅ **OpenRouter API Key** ([Get Free Key](https://openrouter.ai/keys))
@@ -137,12 +142,14 @@ Before you begin, ensure you have:
 ### Installation
 
 #### 1️⃣ Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/AIJobHelper.git
 cd AIJobHelper
 ```
 
 #### 2️⃣ Setup Backend
+
 ```bash
 cd backend
 
@@ -162,6 +169,7 @@ uvicorn main:app --reload --port 8000
 ```
 
 **Expected Output:**
+
 ```
 🚀 AI MODE ENABLED
 ✅ OpenRouter API Key: Configured
@@ -172,6 +180,7 @@ INFO: Uvicorn running on http://127.0.0.1:8000
 ```
 
 #### 3️⃣ Setup Frontend
+
 ```bash
 # In a new terminal
 cd frontend
@@ -184,6 +193,7 @@ npm run dev
 ```
 
 **Expected Output:**
+
 ```
 ▲ Next.js 16.1.1
 - Local:        http://localhost:3000
@@ -191,7 +201,9 @@ npm run dev
 ```
 
 #### 4️⃣ Access Application
+
 Open your browser and navigate to:
+
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/health
 
@@ -212,6 +224,7 @@ graph LR
 ```
 
 **Steps:**
+
 1. Go to **Profile** → Upload your resume (PDF/DOCX/TXT)
 2. Watch real-time AI parsing via Server-Sent Events
 3. Navigate to **Jobs** → Paste job posting URL
@@ -222,6 +235,7 @@ graph LR
 ### 2. Cover Letter Generation
 
 **Steps:**
+
 1. Ensure profile and job are loaded
 2. Go to **Communication** page
 3. Select "Cover Letter" type
@@ -232,6 +246,7 @@ graph LR
 ### 3. Outreach Strategy
 
 **Steps:**
+
 1. Load target job posting
 2. Go to **Outreach** page
 3. Click "Generate Strategy"
@@ -246,6 +261,7 @@ graph LR
 ## 🌐 API Documentation
 
 ### Health Check
+
 ```bash
 GET /health
 
@@ -266,6 +282,7 @@ Response:
 ```
 
 ### Resume Parsing
+
 ```bash
 POST /parse-resume
 Content-Type: multipart/form-data
@@ -283,6 +300,7 @@ Response:
 ```
 
 ### Job Extraction
+
 ```bash
 POST /extract-job
 Content-Type: application/json
@@ -301,6 +319,7 @@ Response:
 ```
 
 ### Resume Enhancement
+
 ```bash
 POST /enhance-resume
 Content-Type: application/json
@@ -343,13 +362,16 @@ GET /api/stream/chat?message=How+do+I+negotiate+a+remote+offer?
 ```
 
 **Frontend usage:**
+
 ```javascript
-const source = new EventSource('/api/stream/analyze?job_description=...&resume_data=...');
+const source = new EventSource(
+  "/api/stream/analyze?job_description=...&resume_data=...",
+);
 source.onmessage = (e) => {
   const { content } = JSON.parse(e.data);
   appendToUI(content); // word-by-word rendering
 };
-source.addEventListener('done', () => source.close());
+source.addEventListener("done", () => source.close());
 ```
 
 ### 🔗 LangChain Chains — NEW
@@ -375,6 +397,7 @@ Body: { "job_description": "...", "resume_data": {...}, "template_type": "profes
 ```
 
 The `/langchain/full-pipeline` endpoint demonstrates **chain composition**:
+
 1. `JobFitAnalysis` chain → structured fit score + gaps
 2. `ResumeTailoring` chain → tailored summary + keyword suggestions
 3. `CoverLetterDraft` chain → personalized cover letter
@@ -388,6 +411,7 @@ Each chain uses `JsonOutputParser` with Pydantic schemas for reliable structured
 CareerAgentPro follows **Apple's Human Interface Guidelines** for a premium, consistent experience.
 
 ### Design Principles
+
 - ✨ **Glassmorphism** - Frosted glass effect with blur
 - 🎭 **Dark Mode** - Automatic theme switching
 - 📱 **Responsive** - Mobile-first design
@@ -396,12 +420,13 @@ CareerAgentPro follows **Apple's Human Interface Guidelines** for a premium, con
 
 ### Color Palette
 
-| Mode | Background | Primary | Success | Warning | Error |
-|------|-----------|---------|---------|---------|-------|
-| **Light** | `#ffffff` | `#0071e3` | `#34c759` | `#ff9500` | `#ff3b30` |
-| **Dark** | `#000000` | `#0a84ff` | `#30d158` | `#ff9f0a` | `#ff453a` |
+| Mode      | Background | Primary   | Success   | Warning   | Error     |
+| --------- | ---------- | --------- | --------- | --------- | --------- |
+| **Light** | `#ffffff`  | `#0071e3` | `#34c759` | `#ff9500` | `#ff3b30` |
+| **Dark**  | `#000000`  | `#0a84ff` | `#30d158` | `#ff9f0a` | `#ff453a` |
 
 ### Typography
+
 - **Font Family**: SF Pro Display, Inter, System UI
 - **Headings**: 48px - 60px (Bold, Black)
 - **Body**: 16px - 18px (Regular, Medium)
@@ -483,6 +508,7 @@ AIJobHelper/
 ## 🧪 Testing
 
 ### Backend Tests
+
 ```bash
 cd backend
 
@@ -497,6 +523,7 @@ pytest tests/test_ai_service.py
 ```
 
 ### Frontend Tests
+
 ```bash
 cd frontend
 
@@ -511,6 +538,7 @@ npm run build
 ```
 
 ### Manual Testing
+
 ```bash
 # 1. Start servers
 cd backend && uvicorn main:app --reload &
@@ -534,6 +562,7 @@ open http://localhost:3000
 ### Deploy to Vercel (Recommended)
 
 #### Option 1: Vercel CLI
+
 ```bash
 # Install Vercel CLI
 npm install -g vercel
@@ -546,6 +575,7 @@ vercel --prod
 ```
 
 #### Option 2: GitHub Integration
+
 1. Push code to GitHub
 2. Visit [vercel.com/new](https://vercel.com/new)
 3. Import your repository
@@ -561,6 +591,7 @@ vercel --prod
 6. Click "Deploy"
 
 #### Verify Deployment
+
 ```bash
 # Check health
 curl https://your-app.vercel.app/api/health
@@ -575,27 +606,28 @@ curl https://your-app.vercel.app/api/health
 
 ### Environment Variables
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `OPENROUTER_API_KEY` | OpenRouter API key | ✅ Yes | `sk-or-v1-xxx` |
-| `ENVIRONMENT` | Environment mode | No | `production` |
-| `PYTHON_VERSION` | Python version | No | `3.12` |
-| `NEXT_PUBLIC_API_URL` | API endpoint | No | `/api` |
+| Variable              | Description        | Required | Example        |
+| --------------------- | ------------------ | -------- | -------------- |
+| `OPENROUTER_API_KEY`  | OpenRouter API key | ✅ Yes   | `sk-or-v1-xxx` |
+| `ENVIRONMENT`         | Environment mode   | No       | `production`   |
+| `PYTHON_VERSION`      | Python version     | No       | `3.12`         |
+| `NEXT_PUBLIC_API_URL` | API endpoint       | No       | `/api`         |
 
 ---
 
 ## 💡 Examples
 
 ### Example: AI Resume Enhancement
+
 ```typescript
 // Upload resume and get AI suggestions
-const response = await fetch('/api/enhance-resume', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+const response = await fetch("/api/enhance-resume", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     resume: profileData,
-    job: jobData
-  })
+    job: jobData,
+  }),
 });
 
 const { suggestions, ats_score } = await response.json();
@@ -604,16 +636,17 @@ const { suggestions, ats_score } = await response.json();
 ```
 
 ### Example: Cover Letter Generation
+
 ```typescript
 // Generate AI cover letter
-const response = await fetch('/api/generate-cover-letter', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+const response = await fetch("/api/generate-cover-letter", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     job_title: "Senior Developer",
     company: "Tech Corp",
-    user_profile: profileData
-  })
+    user_profile: profileData,
+  }),
 });
 
 const { cover_letter } = await response.json();
@@ -637,6 +670,7 @@ cat backend/.env | grep OPENROUTER
 # Reinstall dependencies
 pip install -r requirements.txt --force-reinstall
 ```
+
 </details>
 
 <details>
@@ -651,6 +685,7 @@ python3 -c "from env_loader import get_ai_status; import json; print(json.dumps(
 # Should start with: sk-or-v1-
 # Should be 73 characters long
 ```
+
 </details>
 
 <details>
@@ -666,6 +701,7 @@ cat frontend/src/lib/api.ts
 # Check CORS settings
 # backend/main.py should allow localhost:3000
 ```
+
 </details>
 
 <details>
@@ -681,20 +717,21 @@ cat frontend/src/lib/api.ts
 
 ## 📊 Performance
 
-| Metric | Value | Grade |
-|--------|-------|-------|
-| **AI Response Time** | 2-5s | ⚡ Good |
-| **Fallback Response** | <100ms | ⚡ Excellent |
-| **Frontend Load** | <1s | ⚡ Excellent |
-| **Build Time** | ~2s | ⚡ Fast |
-| **Lighthouse Score** | 98/100 | ⭐ Premium |
-| **Bundle Size** | Optimized | ✅ Small |
+| Metric                | Value     | Grade        |
+| --------------------- | --------- | ------------ |
+| **AI Response Time**  | 2-5s      | ⚡ Good      |
+| **Fallback Response** | <100ms    | ⚡ Excellent |
+| **Frontend Load**     | <1s       | ⚡ Excellent |
+| **Build Time**        | ~2s       | ⚡ Fast      |
+| **Lighthouse Score**  | 98/100    | ⭐ Premium   |
+| **Bundle Size**       | Optimized | ✅ Small     |
 
 ---
 
 ## 🎯 Roadmap
 
 ### ✅ Completed
+
 - [x] Resume parsing with AI
 - [x] Job extraction from URLs
 - [x] AI resume enhancement
@@ -707,11 +744,13 @@ cat frontend/src/lib/api.ts
 - [x] ATS optimization
 
 ### 🚧 In Progress
+
 - [ ] User authentication (JWT/OAuth)
 - [ ] Resume version control
 - [ ] Application tracking system
 
 ### 📅 Planned
+
 - [ ] Salary negotiation assistant
 - [ ] Company research automation
 - [ ] Browser extension
@@ -734,6 +773,7 @@ We welcome contributions! Here's how you can help:
 5. **Open** a Pull Request
 
 ### Development Guidelines
+
 - Follow existing code style
 - Write tests for new features
 - Update documentation
@@ -801,8 +841,8 @@ If you find this project helpful, please consider giving it a star! ⭐
 
 ---
 
-**CareerAgentPro** - *Your AI Career Co-Pilot* 🎯
+**CareerAgentPro** - _Your AI Career Co-Pilot_ 🎯
 
-*Making job search easier, one AI-powered feature at a time.*
+_Making job search easier, one AI-powered feature at a time._
 
 </div>
