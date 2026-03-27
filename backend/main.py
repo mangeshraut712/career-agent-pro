@@ -37,6 +37,15 @@ from services.competency_assessor import CompetencyAssessor
 from services.spinning_service import SpinningStrategy
 from services.resume_verifier import ResumeVerifier as QualityResumeVerifier
 from services.bullet_library_manager import BulletLibraryManager
+# LangChain service layer
+from services.langchain_service import (
+    analyze_job_fit as langchain_analyze_job_fit,
+    tailor_resume as langchain_tailor_resume,
+    generate_cover_letter_langchain,
+    run_full_pipeline as langchain_full_pipeline,
+)
+# Streaming router
+from routers.streaming import router as streaming_router
 
 load_dotenv()
 
@@ -55,6 +64,9 @@ app = FastAPI(
     docs_url="/docs" if os.getenv("DEBUG") else None,
     redoc_url=None,
 )
+
+# Register streaming router (SSE endpoints)
+app.include_router(streaming_router)
 
 # Add GZip compression for responses > 500 bytes
 app.add_middleware(GZipMiddleware, minimum_size=500)
@@ -1031,6 +1043,107 @@ async def verify_resume_quality_endpoint(data: dict = Body(...)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to verify resume quality: {str(e)}"
         )
+
+
+# ============================================================================
+# LANGCHAIN-POWERED ENDPOINTS (2026 Portfolio Upgrade)
+# ============================================================================
+
+@app.post("/langchain/analyze-fit")
+async def langchain_analyze_fit_endpoint(data: dict = Body(...)):
+    """
+    Job fit analysis via LangChain chains.
+    Uses structured output parsing for reliable JSON responses.
+    """
+    try:
+        job_description = data.get("job_description", "")
+        resume_data = data.get("resume_data", {})
+
+        if not job_description:
+            raise HTTPException(status_code=400, detail="job_description is required")
+
+        result = await langchain_analyze_job_fit(job_description, resume_data)
+        logger.info("LangChain job fit analysis completed")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LangChain analyze-fit failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/langchain/tailor-resume")
+async def langchain_tailor_resume_endpoint(data: dict = Body(...)):
+    """
+    Resume tailoring via LangChain chains.
+    Structured output: summary, skills, experience suggestions, keywords.
+    """
+    try:
+        job_description = data.get("job_description", "")
+        resume_data = data.get("resume_data", {})
+
+        if not job_description:
+            raise HTTPException(status_code=400, detail="job_description is required")
+
+        result = await langchain_tailor_resume(job_description, resume_data)
+        logger.info("LangChain resume tailoring completed")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LangChain tailor-resume failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/langchain/cover-letter")
+async def langchain_cover_letter_endpoint(data: dict = Body(...)):
+    """
+    Cover letter generation via LangChain chains.
+    """
+    try:
+        job_description = data.get("job_description", "")
+        resume_data = data.get("resume_data", {})
+        template_type = data.get("template_type", "professional")
+
+        if not job_description:
+            raise HTTPException(status_code=400, detail="job_description is required")
+
+        result = await generate_cover_letter_langchain(
+            job_description, resume_data, template_type
+        )
+        logger.info("LangChain cover letter generated")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LangChain cover-letter failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/langchain/full-pipeline")
+async def langchain_full_pipeline_endpoint(data: dict = Body(...)):
+    """
+    Full sequential pipeline: fit analysis → resume tailoring → cover letter.
+    Demonstrates LangChain chain composition for complex workflows.
+    """
+    try:
+        job_description = data.get("job_description", "")
+        resume_data = data.get("resume_data", {})
+        template_type = data.get("template_type", "professional")
+
+        if not job_description:
+            raise HTTPException(status_code=400, detail="job_description is required")
+
+        result = await langchain_full_pipeline(
+            job_description, resume_data, template_type
+        )
+        logger.info("LangChain full pipeline completed")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LangChain pipeline failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

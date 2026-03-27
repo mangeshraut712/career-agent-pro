@@ -1,86 +1,83 @@
 # ==========================================
 # Core Framework
 # ==========================================
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-python-dotenv==1.0.1
+fastapi>=0.116
+uvicorn[standard]>=0.34
+python-dotenv>=1.1
 
 # ==========================================
 # Data Validation & Settings
 # ==========================================
-pydantic==2.10.3
-pydantic-settings==2.7.0
+pydantic>=2.11
+pydantic-settings>=2.8
 
 # ==========================================
 # AI & API Integration
 # ==========================================
-openai==1.57.4
-httpx==0.28.1
+openai>=1.80
+httpx>=0.28
+
+# ==========================================
+# LangChain Integration
+# ==========================================
+langchain-core>=0.3
+langchain-openai>=0.3
+langchain>=0.3
+
+# ==========================================
+# Streaming & Real-Time
+# ==========================================
+sse-starlette>=2.2
 
 # ==========================================
 # File Processing
 # ==========================================
-python-multipart==0.0.20
-PyPDF2==3.0.1
-python-docx==1.1.2
-fpdf2==2.8.2
+python-multipart>=0.0.20
+PyPDF2>=3.0.1
+python-docx>=1.1.2
+fpdf2>=2.8.2
 
 # ==========================================
 # Web Scraping & HTML Processing
 # ==========================================
-trafilatura==1.12.2
-beautifulsoup4==4.12.3
-lxml==5.3.0
-lxml_html_clean==0.4.1
+trafilatura>=1.12.2
+beautifulsoup4>=4.12.3
+lxml>=5.3.0
+lxml_html_clean>=0.4.1
 
 # ==========================================
 # Security & Authentication
 # ==========================================
-passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.3.0
-cryptography==44.0.0
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+cryptography>=44.0.0
 
 # ==========================================
 # Database (Optional - for future use)
 # ==========================================
-sqlalchemy==2.0.36
+sqlalchemy>=2.0.36
 
 # ==========================================
 # Utilities
 # ==========================================
-python-slugify==8.0.4
+python-slugify>=8.0.4
 
 # ==========================================
 # Serverless Deployment (Vercel)
 # ==========================================
-mangum==0.17.0
+mangum>=0.17.0
 
 # ==========================================
-# Development Dependencies (Optional)
+# Testing
 # ==========================================
-# Uncomment these for development:
-# pytest==8.3.4
-# pytest-cov==6.0.0
-# pytest-asyncio==0.24.0
-# black==24.10.0
-# flake8==7.1.1
-# mypy==1.13.0
-# pre-commit==4.0.1
+pytest>=8.3.4
+pytest-cov>=6.0.0
+pytest-asyncio>=0.24.0
+httpx>=0.28
 
 # ==========================================
-# Production Optimizations (Optional)
+# Production
 # ==========================================
-# Uncomment for production use:
-# gunicorn==23.0.0
-# redis==5.2.1
-# celery==5.4.0
-# sentry-sdk[fastapi]==2.19.2
-
-# ==========================================
-# Notes
-# ==========================================
-# 1. All version numbers are pinned for reproducibility
-# 2. Install with: pip install -r requirements.txt
-# 3. Update with: pip list --outdated
-# 4. Freeze with: pip freeze > requirements.txt
-# 5. For Vercel, all dependencies must be compatible with Python 3.12
+# gunicorn>=23.0.0
+# redis>=5.2.1
+# sentry-sdk[fastapi]>=2.19.2

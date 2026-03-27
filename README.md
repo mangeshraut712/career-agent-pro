@@ -2,12 +2,13 @@
 
 <div align="center">
 
-![CareerAgentPro](https://img.shields.io/badge/CareerAgentPro-v1.1.0-blue?style=for-the-badge)
+![CareerAgentPro](https://img.shields.io/badge/CareerAgentPro-v2.0.0-blue?style=for-the-badge)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)](https://www.python.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-0.3-green?style=for-the-badge)](https://langchain.com/)
 
 ### Your AI-Powered Career Co-Pilot
 
@@ -99,10 +100,20 @@
 
 ### Backend
 <p align="left">
-  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.116-009688?style=flat-square&logo=fastapi" alt="FastAPI"/>
   <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/OpenRouter_AI-API-8A2BE2?style=flat-square" alt="OpenRouter"/>
-  <img src="https://img.shields.io/badge/Pydantic-2.10-E92063?style=flat-square" alt="Pydantic"/>
+  <img src="https://img.shields.io/badge/LangChain-0.3-1976D2?style=flat-square" alt="LangChain"/>
+  <img src="https://img.shields.io/badge/Pydantic-2.11-E92063?style=flat-square" alt="Pydantic"/>
+  <img src="https://img.shields.io/badge/sse--starlette-2.2-green?style=flat-square" alt="SSE Starlette"/>
+  <img src="https://img.shields.io/badge/pytest-8.3-blue?style=flat-square" alt="pytest"/>
+</p>
+
+### Real-Time & Streaming
+<p align="left">
+  <img src="https://img.shields.io/badge/SSE-Streaming_Responses-green?style=flat-square" alt="SSE"/>
+  <img src="https://img.shields.io/badge/LangChain-Chains_+_Structured_Output-blue?style=flat-square" alt="LangChain Chains"/>
+  <img src="https://img.shields.io/badge/Event_Source-Real--Time_UI-orange?style=flat-square" alt="EventSource"/>
 </p>
 
 ### Deployment & Tools
@@ -312,6 +323,63 @@ Response:
 ```
 
 **[Full API Documentation →](https://ai-job-helper-steel.vercel.app/api/health)**
+
+### ⚡ Real-Time Streaming (SSE) — NEW
+
+All streaming endpoints return `text/event-stream`. Connect from frontend with `EventSource`.
+
+```bash
+# Stream job analysis in real-time
+GET /api/stream/analyze?job_description=...&resume_data=...
+
+# Stream cover letter being written
+GET /api/stream/cover-letter?job_description=...&resume_data=...
+
+# Stream resume tailoring walkthrough
+GET /api/stream/tailor-resume?job_description=...&resume_data=...
+
+# Stream career coaching chat
+GET /api/stream/chat?message=How+do+I+negotiate+a+remote+offer?
+```
+
+**Frontend usage:**
+```javascript
+const source = new EventSource('/api/stream/analyze?job_description=...&resume_data=...');
+source.onmessage = (e) => {
+  const { content } = JSON.parse(e.data);
+  appendToUI(content); // word-by-word rendering
+};
+source.addEventListener('done', () => source.close());
+```
+
+### 🔗 LangChain Chains — NEW
+
+Structured output with reliable JSON parsing via LangChain chains.
+
+```bash
+# Job fit analysis (structured output)
+POST /langchain/analyze-fit
+Body: { "job_description": "...", "resume_data": {...} }
+
+# Resume tailoring suggestions
+POST /langchain/tailor-resume
+Body: { "job_description": "...", "resume_data": {...} }
+
+# Cover letter generation
+POST /langchain/cover-letter
+Body: { "job_description": "...", "resume_data": {...}, "template_type": "professional" }
+
+# Full sequential pipeline (fit → tailor → cover letter)
+POST /langchain/full-pipeline
+Body: { "job_description": "...", "resume_data": {...}, "template_type": "professional" }
+```
+
+The `/langchain/full-pipeline` endpoint demonstrates **chain composition**:
+1. `JobFitAnalysis` chain → structured fit score + gaps
+2. `ResumeTailoring` chain → tailored summary + keyword suggestions
+3. `CoverLetterDraft` chain → personalized cover letter
+
+Each chain uses `JsonOutputParser` with Pydantic schemas for reliable structured output.
 
 ---
 
