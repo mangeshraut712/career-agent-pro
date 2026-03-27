@@ -846,3 +846,21 @@ If you find this project helpful, please consider giving it a star! ⭐
 _Making job search easier, one AI-powered feature at a time._
 
 </div>
+
+---
+
+<!-- codex:project-diagram:start -->
+
+## Project Diagram
+
+```mermaid
+flowchart LR
+    A["Browser"] --> B["Frontend"]
+    B --> C["Backend / API"]
+    C --> D["Data / Services"]
+    B -. feedback .-> A
+```
+
+_Main application path from user interface through backend services._
+
+<!-- codex:project-diagram:end -->
