@@ -137,6 +137,6 @@ jobs:
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Vercel Config | ✅ Valid |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Pages | Workflow deploy |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🎉 Ready to deploy to Vercel!" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 Ready to deploy to GitHub Pages!" >> $GITHUB_STEP_SUMMARY

@@ -13,6 +13,7 @@ import { AppleCard } from "@/components/ui/AppleCard";
 import { AppleButton } from "@/components/ui/AppleButton";
 import { useToast } from "@/components/ui/Toast";
 import { secureGet, secureSet } from "@/lib/secureStorage";
+import { FADE_IN } from "@/lib/animations";
 
 interface Experience {
     id: string;
@@ -115,12 +116,6 @@ const navItems = [
     { id: "certifications", icon: Heart, label: "Professional Proof", gradient: "from-rose-500 to-orange-400" },
     { id: "skills", icon: Code, label: "Core Competency", gradient: "from-emerald-500 to-teal-400" },
 ];
-
-const FADE_IN = {
-    initial: { opacity: 0, y: 30 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-};
 
 export default function ProfilePage() {
     const { toast } = useToast();

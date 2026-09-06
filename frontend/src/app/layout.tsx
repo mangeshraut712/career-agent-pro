@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 // Optimized font loading with preload
@@ -23,6 +26,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mangeshraut712.github.io/career-agent-pro/"),
   title: "CareerAgentPro - AI-Powered Career Platform",
   description: "Your AI Career Co-Pilot. Automate job search, optimize resumes with AI, and land your dream role with CareerAgentPro.",
   keywords: ["AI resume", "job search", "career platform", "resume optimization", "job application"],
@@ -34,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "CareerAgentPro - AI-Powered Career Platform",
     description: "Your AI Career Co-Pilot. Automate job search, optimize resumes, and land your dream role.",
-    url: "https://ai-job-helper-steel.vercel.app",
+    url: "https://mangeshraut712.github.io/career-agent-pro/",
     siteName: "CareerAgentPro",
     type: "website",
     locale: "en_US",
@@ -45,10 +49,6 @@ export const metadata: Metadata = {
     description: "Your AI Career Co-Pilot for job search automation.",
   },
 };
-
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { ToastProvider } from "@/components/ui/Toast";
 
 export default function RootLayout({
   children,

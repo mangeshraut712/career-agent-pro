@@ -14,7 +14,7 @@
 
 _Automate job search, optimize resumes with AI, and land your dream role_
 
-[🌐 Live Demo](https://ai-job-helper-steel.vercel.app) · [📖 Documentation](#-features) · [🚀 Quick Start](#-quick-start) · [💡 Examples](#-examples)
+[🌐 Live Demo](https://mangeshraut712.github.io/career-agent-pro/) · [📖 Documentation](#-features) · [🚀 Quick Start](#-quick-start) · [💡 Examples](#-examples)
 
 </div>
 
@@ -122,7 +122,7 @@ _Automate job search, optimize resumes with AI, and land your dream role_
 ### Deployment & Tools
 
 <p align="left">
-  <img src="https://img.shields.io/badge/Vercel-Production-black?style=flat-square&logo=vercel" alt="Vercel"/>
+  <img src="https://img.shields.io/badge/GitHub_Pages-Production-222?style=flat-square&logo=github" alt="GitHub Pages"/>
   <img src="https://img.shields.io/badge/Git-Version_Control-F05032?style=flat-square&logo=git" alt="Git"/>
   <img src="https://img.shields.io/badge/npm-Package_Manager-CB3837?style=flat-square&logo=npm" alt="npm"/>
 </p>
@@ -341,7 +341,7 @@ Response:
 }
 ```
 
-**[Full API Documentation →](https://ai-job-helper-steel.vercel.app/api/health)**
+**[Full API Documentation →](#-api-documentation)**
 
 ### ⚡ Real-Time Streaming (SSE) — NEW
 
@@ -559,49 +559,23 @@ open http://localhost:3000
 
 ## 🚢 Deployment
 
-### Deploy to Vercel (Recommended)
+### Deploy to GitHub Pages (Recommended)
 
-#### Option 1: Vercel CLI
+The frontend is a static Next.js export. GitHub Actions builds `frontend/out` and deploys with `actions/deploy-pages`.
 
-```bash
-# Install Vercel CLI
-npm install -g vercel
+1. Pages is configured with `build_type=workflow`.
+2. Push (or merge) to `main`.
+3. The **Deploy GitHub Pages** workflow uploads the artifact and publishes:
 
-# Login
-vercel login
+   `https://mangeshraut712.github.io/career-agent-pro/`
 
-# Deploy to production
-vercel --prod
-```
-
-#### Option 2: GitHub Integration
-
-1. Push code to GitHub
-2. Visit [vercel.com/new](https://vercel.com/new)
-3. Import your repository
-4. Configure:
-   - **Framework**: Next.js
-   - **Root Directory**: `./`
-   - **Build Command**: `cd frontend && npm run build`
-   - **Output Directory**: `frontend/.next`
-5. Add environment variables:
-   - `OPENROUTER_API_KEY`
-   - `ENVIRONMENT=production`
-   - `PYTHON_VERSION=3.12`
-6. Click "Deploy"
+The site uses `basePath` `/career-agent-pro`. The FastAPI backend is not hosted on GitHub Pages; run it locally (`uvicorn`) and set `NEXT_PUBLIC_API_URL` if you need live API calls.
 
 #### Verify Deployment
 
 ```bash
-# Check health
-curl https://your-app.vercel.app/api/health
-
-# Expected response
-{
-  "status": "healthy",
-  "environment": "vercel",
-  "ai_service": "configured"
-}
+curl -sI https://mangeshraut712.github.io/career-agent-pro/
+# HTTP/2 200
 ```
 
 ### Environment Variables
@@ -705,12 +679,12 @@ cat frontend/src/lib/api.ts
 </details>
 
 <details>
-<summary><b>Vercel deployment fails</b></summary>
+<summary><b>GitHub Pages deployment fails</b></summary>
 
-1. Check environment variables in Vercel dashboard
-2. View deployment logs: `vercel logs`
-3. Force redeploy: `vercel --prod --force`
-4. Test health: `curl https://your-app.vercel.app/api/health`
+1. Confirm Pages is enabled with `build_type=workflow`
+2. Check the **Deploy GitHub Pages** workflow logs
+3. Re-run the workflow from the Actions tab
+4. Verify: `curl -sI https://mangeshraut712.github.io/career-agent-pro/`
 </details>
 
 ---
@@ -805,7 +779,7 @@ Need help? Here's how to get support:
 - 📖 **Documentation**: Read this README thoroughly
 - 🐛 **Issues**: [Open an issue](https://github.com/yourusername/AIJobHelper/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/AIJobHelper/discussions)
-- 🌐 **Live Demo**: [ai-job-helper-steel.vercel.app](https://ai-job-helper-steel.vercel.app)
+- 🌐 **Live Demo**: [mangeshraut712.github.io/career-agent-pro](https://mangeshraut712.github.io/career-agent-pro/)
 
 ---
 
@@ -835,9 +809,9 @@ If you find this project helpful, please consider giving it a star! ⭐
 
 **Built with ❤️ by [Mangesh Raut](https://github.com/yourusername)**
 
-🚀 **Ready to deploy?** → `vercel --prod`
+🚀 **Ready to deploy?** Push to `main` — GitHub Actions publishes Pages.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/AIJobHelper)
+[Live site](https://mangeshraut712.github.io/career-agent-pro/)
 
 ---
 

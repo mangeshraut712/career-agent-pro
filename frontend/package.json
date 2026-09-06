@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/yourusername/AIJobHelper/issues"
   },
-  "homepage": "https://ai-job-helper-steel.vercel.app",
+  "homepage": "https://mangeshraut712.github.io/career-agent-pro/",
   "keywords": [
     "ai",
     "resume",
@@ -64,7 +64,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^10",
+    "eslint": "^9",
     "eslint-config-next": "^16.1.6",
     "prettier": "^3.4.2",
     "tailwindcss": "^4",
