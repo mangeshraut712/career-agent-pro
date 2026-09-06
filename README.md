@@ -18,6 +18,16 @@ _Automate job search, optimize resumes with AI, and land your dream role_
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshots/01-home.png" alt="CareerAgentPro home: Land Your Dream Job hero with Match Score dashboard" width="100%" />
+</p>
+<p align="center"><em>Home — marketing hero plus product preview (match score, skills found, gaps) from the live GitHub Pages site.</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/02-feature.png" alt="CareerAgentPro Jobs: Paste Analyze Apply job URL extractor" width="100%" />
+</p>
+<p align="center"><em>Jobs — paste a posting URL and extract requirements, skills, and match probability.</em></p>
+
 ---
 
 ## 📋 Table of Contents
@@ -144,8 +154,8 @@ Before you begin, ensure you have:
 #### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/AIJobHelper.git
-cd AIJobHelper
+git clone https://github.com/mangeshraut712/career-agent-pro.git
+cd career-agent-pro
 ```
 
 #### 2️⃣ Setup Backend
@@ -437,7 +447,7 @@ CareerAgentPro follows **Apple's Human Interface Guidelines** for a premium, con
 ## 📦 Project Structure
 
 ```
-AIJobHelper/
+career-agent-pro/
 ├── 📁 backend/                  # Python FastAPI backend
 │   ├── 📁 api/                  # Serverless entry point
 │   │   └── index.py             # Vercel serverless handler
@@ -777,8 +787,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 Need help? Here's how to get support:
 
 - 📖 **Documentation**: Read this README thoroughly
-- 🐛 **Issues**: [Open an issue](https://github.com/yourusername/AIJobHelper/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/AIJobHelper/discussions)
+- 🐛 **Issues**: [Open an issue](https://github.com/mangeshraut712/career-agent-pro/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/mangeshraut712/career-agent-pro/discussions)
 - 🌐 **Live Demo**: [mangeshraut712.github.io/career-agent-pro](https://mangeshraut712.github.io/career-agent-pro/)
 
 ---
@@ -787,7 +797,7 @@ Need help? Here's how to get support:
 
 If you find this project helpful, please consider giving it a star! ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/AIJobHelper&type=Date)](https://star-history.com/#yourusername/AIJobHelper&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=mangeshraut712/career-agent-pro&type=Date)](https://star-history.com/#mangeshraut712/career-agent-pro&Date)
 
 ---
 
@@ -795,11 +805,11 @@ If you find this project helpful, please consider giving it a star! ⭐
 
 <div align="center">
 
-![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/AIJobHelper?style=flat-square)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/AIJobHelper?style=flat-square)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/yourusername/AIJobHelper?style=flat-square)
-![GitHub stars](https://img.shields.io/github/stars/yourusername/AIJobHelper?style=flat-square)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/AIJobHelper?style=flat-square)
+![GitHub last commit](https://img.shields.io/github/last-commit/mangeshraut712/career-agent-pro?style=flat-square)
+![GitHub issues](https://img.shields.io/github/issues/mangeshraut712/career-agent-pro?style=flat-square)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/mangeshraut712/career-agent-pro?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/mangeshraut712/career-agent-pro?style=flat-square)
+![GitHub forks](https://img.shields.io/github/forks/mangeshraut712/career-agent-pro?style=flat-square)
 
 </div>
 
@@ -807,7 +817,7 @@ If you find this project helpful, please consider giving it a star! ⭐
 
 <div align="center">
 
-**Built with ❤️ by [Mangesh Raut](https://github.com/yourusername)**
+**Built with ❤️ by [Mangesh Raut](https://github.com/mangeshraut712)**
 
 🚀 **Ready to deploy?** Push to `main` — GitHub Actions publishes Pages.
 
