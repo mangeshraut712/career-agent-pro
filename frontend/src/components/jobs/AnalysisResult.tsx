@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { AppleCard } from "@/components/ui/AppleCard";
 import { AppleButton } from "@/components/ui/AppleButton";
-import { sanitizeURL } from "@/lib/sanitize";
 
 interface AnalyzedJob {
     id: string;
@@ -30,6 +29,44 @@ interface AnalyzedJob {
 interface AnalysisResultProps {
     job: AnalyzedJob;
     onSave: () => void;
+}
+
+function SafeExternalIconLink({ url }: { url: string }) {
+    let href: string | undefined;
+    try {
+        const parsed = new URL(url.trim());
+        const rest = `${parsed.host}${parsed.pathname}${parsed.search}${parsed.hash}`;
+        // Literal scheme prefix: javascript:/data: cannot survive this rebuild.
+        if (parsed.protocol === "https:") {
+            href = `https://${rest}`;
+        } else if (parsed.protocol === "http:") {
+            href = `http://${rest}`;
+        }
+    } catch {
+        href = undefined;
+    }
+
+    if (href === undefined) {
+        return null;
+    }
+
+    const safeHref = href;
+    const openOriginalPosting = () => {
+        if (safeHref.startsWith("https://") || safeHref.startsWith("http://")) {
+            window.open(safeHref, "_blank", "noopener,noreferrer");
+        }
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={openOriginalPosting}
+            aria-label="Open original job posting"
+            className="flex items-center justify-center bg-white/50 backdrop-blur-sm border border-border/50 hover:bg-white shadow-sm h-12 w-12 p-0 rounded-full transition-all hover:scale-105 active:scale-95"
+        >
+            <ExternalLink size={20} className="text-muted-foreground" />
+        </button>
+    );
 }
 
 export function AnalysisResult({ job, onSave }: AnalysisResultProps) {
@@ -68,24 +105,7 @@ export function AnalysisResult({ job, onSave }: AnalysisResultProps) {
                             <AppleButton onClick={onSave} variant="secondary" className="bg-white/50 backdrop-blur-sm border border-border/50 hover:bg-white shadow-sm h-12 w-12 p-0 flex items-center justify-center">
                                 <Bookmark size={20} className="text-primary" />
                             </AppleButton>
-                            {(() => {
-                                // Explicit sanitization for CodeQL taint analysis
-                                const validatedUrl = sanitizeURL(job.url);
-                                // Only render link if URL is valid
-                                if (!validatedUrl || validatedUrl === '') {
-                                    return null;
-                                }
-                                return (
-                                    <a
-                                        href={validatedUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center justify-center bg-white/50 backdrop-blur-sm border border-border/50 hover:bg-white shadow-sm h-12 w-12 p-0 rounded-full transition-all hover:scale-105 active:scale-95"
-                                    >
-                                        <ExternalLink size={20} className="text-muted-foreground" />
-                                    </a>
-                                );
-                            })()}
+                            <SafeExternalIconLink url={job.url} />
                         </div>
                     </div>
 
