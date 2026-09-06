@@ -1,7 +1,7 @@
 /**
  * Smart API URL Configuration
- * Works identically on localhost and Vercel without code changes
- * 
+ * Works on localhost, GitHub Pages, and remaining Vercel hosts.
+ *
  * Usage: import API_URL from '@/lib/api'
  * Then: `${API_URL}/endpoint` works everywhere!
  */
@@ -23,6 +23,7 @@ class SmartAPIURL {
         // Exact domain matching to prevent subdomain bypass
         return hostname === 'vercel.app' ||
             hostname.endsWith('.vercel.app') ||
+            hostname.endsWith('.github.io') ||
             hostname === 'yourdomain.com' ||
             hostname.endsWith('.yourdomain.com') ||
             process.env.NODE_ENV === 'production';
@@ -61,13 +62,18 @@ class SmartAPIURL {
         const hostname = window.location.hostname;
 
         if (this.isProd) {
-            // Vercel: Same origin, endpoints at /api/*
-            // Security: Validate origin before using it
+            if (process.env.NEXT_PUBLIC_API_URL) {
+                return process.env.NEXT_PUBLIC_API_URL;
+            }
+            // GitHub Pages hosts only the static frontend; API is not same-origin.
+            if (hostname.endsWith('.github.io')) {
+                return 'http://localhost:8000';
+            }
+            // Vercel (or other Node hosts): same origin, endpoints at /api/*
             const origin = window.location.origin;
             if (this.isValidOrigin(origin)) {
                 return origin + '/api';
             }
-            // Fallback to safe default if validation fails
             return '/api';
         }
 
@@ -111,6 +117,7 @@ export const isProduction = (): boolean => {
     // Exact domain matching to prevent subdomain bypass
     return hostname === 'vercel.app' ||
         hostname.endsWith('.vercel.app') ||
+        hostname.endsWith('.github.io') ||
         hostname === 'yourdomain.com' ||
         hostname.endsWith('.yourdomain.com');
 };

@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
+const repoBasePath = "/career-agent-pro";
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
+  // Static HTML export for GitHub Pages (no Node server).
+  output: "export",
+  // Project site lives at https://<user>.github.io/career-agent-pro/
+  basePath: isProd ? repoBasePath : "",
+  trailingSlash: true,
+
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
@@ -10,8 +19,9 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
 
-  // Image optimization settings
+  // Image optimization settings (unoptimized: required for static export)
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -37,52 +47,6 @@ const nextConfig: NextConfig = {
       "zod",
       "react-hook-form",
     ],
-    // Enable CSS optimization
-    optimizeCss: true,
-  },
-
-  // Headers for caching and security
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [
-          {
-            key: "X-DNS-Prefetch-Control",
-            value: "on",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-        ],
-      },
-      {
-        // Cache static assets aggressively
-        source: "/(.*)\\.(ico|png|jpg|jpeg|gif|webp|svg|woff|woff2)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        // Cache JS/CSS with revalidation
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-    ];
-  },
-
-  // URL rewrites for API proxying (optional performance boost)
-  async rewrites() {
-    return [];
   },
 };
 

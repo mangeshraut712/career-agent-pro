@@ -45,8 +45,8 @@ jobs:
             | ⚙️ Config | ${configChanges} |
             
             ### 🚀 Deployment
-            - Vercel will automatically create a preview deployment
-            - Preview URL will be available once build completes
+            - Static site deploys to GitHub Pages from \`main\`
+            - Live URL: https://mangeshraut712.github.io/career-agent-pro/
             
             ### ✅ CI Status
             - Check the Actions tab for build status
