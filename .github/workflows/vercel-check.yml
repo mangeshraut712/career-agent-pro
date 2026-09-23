@@ -13,6 +13,9 @@ on:
       - 'frontend/**'
       - 'backend/**'
 
+permissions:
+  contents: read
+
 jobs:
   vercel-check:
     name: ✅ Vercel Configuration Check
