@@ -111,18 +111,18 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: ✅ Validate vercel.json
+      - name: ✅ Validate GitHub Pages workflow
         run: |
-          if [ ! -f vercel.json ]; then
-            echo "❌ vercel.json missing!"
+          if [ ! -f .github/workflows/deploy-pages.yml ]; then
+            echo "❌ deploy-pages.yml missing!"
             exit 1
           fi
-          python3 -c "import json; json.load(open('vercel.json'))" && echo "✅ vercel.json is valid JSON"
+          echo "✅ GitHub Pages workflow present"
       
       - name: ✅ Check required files
         run: |
           echo "Checking required files..."
-          files=("frontend/package.json" "frontend/next.config.ts" "backend/main.py" "backend/requirements.txt" "vercel.json")
+          files=("frontend/package.json" "frontend/next.config.ts" "backend/main.py" "backend/requirements.txt" ".github/workflows/deploy-pages.yml")
           for file in "${files[@]}"; do
             if [ -f "$file" ]; then
               echo "✅ $file exists"
