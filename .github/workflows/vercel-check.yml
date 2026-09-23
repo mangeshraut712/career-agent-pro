@@ -1,17 +1,20 @@
 name: Vercel Deployment Check
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     paths:
       - 'vercel.json'
       - 'frontend/**'
       - 'backend/**'
+      - '.github/workflows/vercel-check.yml'
   pull_request:
     paths:
       - 'vercel.json'
       - 'frontend/**'
       - 'backend/**'
+      - '.github/workflows/vercel-check.yml'
 
 permissions:
   contents: read
