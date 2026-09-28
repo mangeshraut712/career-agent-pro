@@ -18,20 +18,27 @@ _Automate job search, optimize resumes with AI, and land your dream role_
 
 </div>
 
-<p align="center">
-  <img src="docs/screenshots/01-home.png" alt="CareerAgentPro home: Land Your Dream Job hero with Match Score dashboard" width="100%" />
-</p>
-<p align="center"><em>Home — marketing hero plus product preview (match score, skills found, gaps) from the live GitHub Pages site.</em></p>
+## Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/02-feature.png" alt="CareerAgentPro Jobs: Paste Analyze Apply job URL extractor" width="100%" />
-</p>
-<p align="center"><em>Jobs — paste a posting URL and extract requirements, skills, and match probability.</em></p>
+Framed captures of the live app (current UI).
+
+<div align="center">
+
+<img src="docs/screenshots/01-home.webp" alt="CareerAgentPro home: land the job with AI" width="720" />
+
+<img src="docs/screenshots/02-jobs.webp" alt="CareerAgentPro jobs: paste a posting and see the fit" width="720" />
+
+<img src="docs/screenshots/03-dashboard.webp" alt="CareerAgentPro dashboard: job search in one place" width="720" />
+
+<img src="docs/screenshots/04-resumes.webp" alt="CareerAgentPro resumes: forge a resume for each job" width="720" />
+
+</div>
 
 ---
 
 ## 📋 Table of Contents
 
+- [Screenshots](#screenshots)
 - [✨ Features](#-features)
 - [🎯 Why CareerAgentPro?](#-why-careeragentpro)
 - [🛠️ Tech Stack](#️-tech-stack)
