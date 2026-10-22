@@ -81,3 +81,5 @@ httpx>=0.28
 # gunicorn>=23.0.0
 # redis>=5.2.1
 # sentry-sdk[fastapi]>=2.19.2
+# emSign CA advisory: require patched CA bundle
+certifi>=2026.10.19
