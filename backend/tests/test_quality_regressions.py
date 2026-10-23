@@ -2,6 +2,7 @@
 import io
 import socket
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import pytest
 from fastapi.testclient import TestClient
@@ -352,7 +353,10 @@ class TestJobUrlSafety:
         monkeypatch.setattr("services.job_service.trafilatura.fetch_url", explode)
         monkeypatch.setattr(self.service, "_fetch_with_httpx", short_fetch)
         result = await self.service.extract_from_url("https://www.linkedin.com/jobs/view/9")
-        assert result.url.startswith("https://www.linkedin.com")
+        parsed = urlparse(result.url)
+        assert parsed.scheme == "https"
+        assert parsed.hostname == "www.linkedin.com"
+        assert parsed.path == "/jobs/view/9"
 
 
 class TestAutofillAndAiErrors:
