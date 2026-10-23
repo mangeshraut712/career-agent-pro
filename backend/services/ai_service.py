@@ -70,10 +70,10 @@ class AIService:
                     {"role": "user", "content": prompt},
                 ],
             )
-            return response.choices[0].message.content
-        except Exception as e:
-            logger.error(f"AI API request failed: {str(e)}")
-            return f'{{"error": "API request failed: {str(e)}"}}'
+            return response.choices[0].message.content or ""
+        except Exception:
+            logger.exception("AI API request failed")
+            return '{"error": "API request failed"}'
 
     async def stream_completion(
         self,
@@ -97,11 +97,14 @@ class AIService:
                 stream=True
             )
             async for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-        except Exception as e:
-            logger.error(f"AI Streaming failed: {str(e)}")
-            yield f'Error: {str(e)}'
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta and delta.content:
+                    yield delta.content
+        except Exception:
+            logger.exception("AI Streaming failed")
+            yield '{"error": "API request failed"}'
 
     async def enhance_resume(self, resume: ResumeData, job: JobDescription) -> Dict[str, Any]:
         """
@@ -799,6 +802,8 @@ RESUME TEXT:
                             
             except Exception as e:
                 logger.warning(f"AI parsing failed, using heuristic results: {str(e)}")
+
+        return result
         
     async def stream_parse_resume(self, text: str):
         """Stream resume parsing results via SSE format."""

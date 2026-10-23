@@ -76,7 +76,8 @@ def _get_llm(temperature: float = 0.2, model: str | None = None) -> ChatOpenAI:
     return ChatOpenAI(
         model=model_name,
         temperature=temperature,
-        openai_api_key=api_key,
+        # The client rejects an empty key at construction time, before any request.
+        openai_api_key=api_key or "not-configured",
         openai_api_base=base_url,
         default_headers={
             "HTTP-Referer": os.getenv("OPENROUTER_APP_URL", "https://ai-job-helper-steel.vercel.app"),

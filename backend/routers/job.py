@@ -159,5 +159,5 @@ async def assess_competencies_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to assess competencies: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assess competencies: {str(e)}"
+            detail="Failed to assess competencies"
         )

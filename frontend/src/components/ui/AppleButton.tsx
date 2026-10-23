@@ -10,7 +10,7 @@ interface AppleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 export const AppleButton = React.forwardRef<HTMLButtonElement, AppleButtonProps>(
-    ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
+    ({ className, variant = "primary", size = "md", isLoading, children, disabled, type = "button", ...props }, ref) => {
         const baseStyles = "inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]";
 
         const variants = {
@@ -30,6 +30,7 @@ export const AppleButton = React.forwardRef<HTMLButtonElement, AppleButtonProps>
         return (
             <button
                 ref={ref}
+                type={type}
                 disabled={disabled || isLoading}
                 className={cn(baseStyles, variants[variant], sizes[size], className)}
                 {...props}

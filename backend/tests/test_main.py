@@ -7,6 +7,7 @@ Verifies that all endpoints are registered and basic routing works.
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+from tests.conftest import collect_route_paths
 
 
 client = TestClient(app)
@@ -42,6 +43,7 @@ class TestCoreEndpointRegistration:
 
     EXPECTED_ENDPOINTS = [
         "/parse-resume",
+        "/parse-resume-stream",
         "/extract-job",
         "/enhance-resume",
         "/generate-cover-letter",
@@ -72,12 +74,12 @@ class TestCoreEndpointRegistration:
     ]
 
     def test_all_core_endpoints_registered(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         for endpoint in self.EXPECTED_ENDPOINTS:
             assert endpoint in routes, f"Endpoint {endpoint} not registered"
 
     def test_streaming_endpoints_registered(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/api/stream/analyze" in routes
         assert "/api/stream/cover-letter" in routes
         assert "/api/stream/chat" in routes
@@ -115,17 +117,17 @@ class TestLangChainEndpointRegistration:
     """Verify LangChain-specific endpoints exist."""
 
     def test_langchain_analyze_fit(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/langchain/analyze-fit" in routes
 
     def test_langchain_tailor_resume(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/langchain/tailor-resume" in routes
 
     def test_langchain_cover_letter(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/langchain/cover-letter" in routes
 
     def test_langchain_full_pipeline(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/langchain/full-pipeline" in routes

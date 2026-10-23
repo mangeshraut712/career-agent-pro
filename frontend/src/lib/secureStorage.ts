@@ -12,6 +12,8 @@
  * storage with proper encryption.
  */
 
+import { toSafeHttpHref } from "@/lib/sanitize";
+
 const STORAGE_PREFIX = 'cap_'; // CareerAgentPro prefix
 const STORAGE_VERSION = 1;
 
@@ -74,7 +76,9 @@ export function secureSet<T>(key: string, data: T, expiresInMs?: number): boolea
     try {
         const wrapper: StorageWrapper<T> = {
             version: STORAGE_VERSION,
-            timestamp: Date.now() + (expiresInMs || 0),
+            // 0 means the value does not expire. A timestamp of Date.now()
+            // would be treated as already expired on the next read.
+            timestamp: expiresInMs && expiresInMs > 0 ? Date.now() + expiresInMs : 0,
             data,
         };
 
@@ -170,22 +174,34 @@ export function secureClear(): void {
  * @param fallback - Fallback URL if sanitization fails (default: '#')
  * @returns Sanitized URL or fallback
  */
+function hasUnsafeUrlCharacter(value: string): boolean {
+    for (let i = 0; i < value.length; i++) {
+        const code = value.charCodeAt(i);
+        if (
+            code <= 32 ||
+            code === 127 ||
+            code === 34 ||
+            code === 39 ||
+            code === 60 ||
+            code === 62
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export function sanitizeUrl(url: string | undefined | null, fallback: string = '#'): string {
     if (!url || typeof url !== 'string') {
         return fallback;
     }
 
-    // Trim and check for valid URL protocols
-    const trimmedUrl = url.trim().toLowerCase();
-
-    // Only allow http and https
-    if (trimmedUrl.startsWith('https://') || trimmedUrl.startsWith('http://')) {
-        // Return the original (not lowercased) URL
-        return url.trim();
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl || hasUnsafeUrlCharacter(trimmedUrl)) {
+        return fallback;
     }
 
-    // Block dangerous protocols like javascript:, data:, vbscript:, etc.
-    return fallback;
+    return toSafeHttpHref(trimmedUrl) ?? fallback;
 }
 
 /**

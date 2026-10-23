@@ -10,6 +10,53 @@ from slugify import slugify
 
 logger = logging.getLogger(__name__)
 
+_LATEX_ESCAPES = {
+    "\\": r"\textbackslash{}",
+    "&": r"\&",
+    "%": r"\%",
+    "$": r"\$",
+    "#": r"\#",
+    "_": r"\_",
+    "{": r"\{",
+    "}": r"\}",
+    "~": r"\textasciitilde{}",
+    "^": r"\textasciicircum{}",
+}
+
+_DEJAVU_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+_DEJAVU_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+_DEJAVU_OBLIQUE = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf"
+
+
+def escape_latex(text: object) -> str:
+    """Escape LaTeX specials in one pass so replacements are not reprocessed."""
+    if text is None:
+        return ""
+    return "".join(_LATEX_ESCAPES.get(char, char) for char in str(text))
+
+
+def _register_pdf_font(pdf: FPDF) -> str:
+    """Use a Unicode font when it is installed. Otherwise fall back to Helvetica."""
+    if not os.path.exists(_DEJAVU_REGULAR):
+        return "Helvetica"
+    try:
+        pdf.add_font("DejaVu", "", _DEJAVU_REGULAR)
+        if os.path.exists(_DEJAVU_BOLD):
+            pdf.add_font("DejaVu", "B", _DEJAVU_BOLD)
+        if os.path.exists(_DEJAVU_OBLIQUE):
+            pdf.add_font("DejaVu", "I", _DEJAVU_OBLIQUE)
+        return "DejaVu"
+    except Exception:
+        logger.exception("Failed to register Unicode PDF font")
+        return "Helvetica"
+
+
+def pdf_text(text: object, unicode_font: bool) -> str:
+    value = "" if text is None else str(text)
+    if unicode_font:
+        return value
+    return value.encode("latin-1", errors="replace").decode("latin-1")
+
 
 class ExportService:
     """Service for exporting resumes to various formats."""
@@ -57,6 +104,8 @@ class ExportService:
             if resume.experience:
                 doc.add_heading('Experience', level=1)
                 for exp in resume.experience:
+                    if not isinstance(exp, dict):
+                        continue
                     role = exp.get('role', 'N/A')
                     company = exp.get('company', 'N/A')
                     doc.add_heading(f"{role} at {company}", level=2)
@@ -71,6 +120,8 @@ class ExportService:
             if resume.education:
                 doc.add_heading('Education', level=1)
                 for edu in resume.education:
+                    if not isinstance(edu, dict):
+                        continue
                     institution = edu.get('institution', 'N/A')
                     doc.add_heading(institution, level=2)
                     
@@ -105,10 +156,21 @@ class ExportService:
             
             pdf = FPDF()
             pdf.add_page()
+            font = _register_pdf_font(pdf)
+            unicode_font = font == "DejaVu"
+            bold = "B" if font == "Helvetica" or os.path.exists(_DEJAVU_BOLD) else ""
+            italic = "I" if font == "Helvetica" or os.path.exists(_DEJAVU_OBLIQUE) else ""
+
+            def _line(style: str, size: int, text: object, height: int = 8, align: str = "L") -> None:
+                rendered = pdf_text(text, unicode_font).strip()
+                if not rendered:
+                    return
+                pdf.set_x(pdf.l_margin)
+                pdf.set_font(font, style, size)
+                pdf.multi_cell(0, height, rendered, align=align)
             
             # Name
-            pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(0, 10, resume.name, ln=True, align='C')
+            _line(bold, 16, resume.name, 10, align="C")
             
             # Contact information
             contact_parts = [resume.email]
@@ -118,57 +180,50 @@ class ExportService:
                 contact_parts.append(resume.linkedin)
             
             if contact_parts:
-                pdf.set_font("Helvetica", "I", 10)
-                pdf.cell(0, 10, " | ".join(contact_parts), ln=True, align='C')
+                _line(italic, 10, " | ".join(contact_parts), 8, align="C")
             
             # Summary
             if resume.summary:
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 10, "Summary", ln=True)
-                pdf.set_font("Helvetica", "", 10)
-                pdf.multi_cell(0, 5, resume.summary)
+                _line(bold, 12, "Summary", 10)
+                _line("", 10, resume.summary, 5)
             
             # Experience
             if resume.experience:
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 10, "Experience", ln=True)
+                _line(bold, 12, "Experience", 10)
                 for exp in resume.experience:
+                    if not isinstance(exp, dict):
+                        continue
                     role = exp.get('role', 'N/A')
                     company = exp.get('company', 'N/A')
-                    pdf.set_font("Helvetica", "B", 10)
-                    pdf.cell(0, 7, f"{role} at {company}", ln=True)
+                    _line(bold, 10, f"{role} at {company}", 7)
                     
                     if exp.get('duration'):
-                        pdf.set_font("Helvetica", "I", 9)
-                        pdf.cell(0, 7, exp['duration'], ln=True)
+                        _line(italic, 9, exp['duration'], 7)
                     
                     if exp.get('description'):
-                        pdf.set_font("Helvetica", "", 10)
-                        pdf.multi_cell(0, 5, exp['description'])
+                        _line("", 10, exp['description'], 5)
             
             # Education
             if resume.education:
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 10, "Education", ln=True)
+                _line(bold, 12, "Education", 10)
                 for edu in resume.education:
+                    if not isinstance(edu, dict):
+                        continue
                     institution = edu.get('institution', 'N/A')
                     degree = edu.get('degree', '')
                     year = edu.get('graduation_year', '')
                     
-                    pdf.set_font("Helvetica", "B", 10)
-                    pdf.cell(0, 7, institution, ln=True)
-                    pdf.set_font("Helvetica", "", 10)
+                    _line(bold, 10, institution, 7)
                     degree_text = degree
                     if year:
                         degree_text += f" ({year})"
-                    pdf.cell(0, 7, degree_text, ln=True)
+                    _line("", 10, degree_text, 7)
             
             # Skills
             if resume.skills:
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 10, "Skills", ln=True)
-                pdf.set_font("Helvetica", "", 10)
-                pdf.multi_cell(0, 5, ", ".join(resume.skills))
+                _line(bold, 12, "Skills", 10)
+                skill_values = [str(skill) for skill in resume.skills if skill]
+                _line("", 10, ", ".join(skill_values), 5)
             
             # Ensure directory exists
             os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
@@ -187,26 +242,6 @@ class ExportService:
             if not resume.name:
                 raise ValueError("Resume name is required")
             
-            # Escape LaTeX special characters
-            def escape_latex(text: str) -> str:
-                if not text:
-                    return ""
-                replacements = {
-                    '&': r'\&',
-                    '%': r'\%',
-                    '$': r'\$',
-                    '#': r'\#',
-                    '^': r'\textasciicircum{}',
-                    '_': r'\_',
-                    '{': r'\{',
-                    '}': r'\}',
-                    '~': r'\textasciitilde{}',
-                    '\\': r'\textbackslash{}',
-                }
-                for char, replacement in replacements.items():
-                    text = text.replace(char, replacement)
-                return text
-            
             name_parts = resume.name.split()
             first_name = escape_latex(name_parts[0]) if name_parts else ""
             last_name = escape_latex(" ".join(name_parts[1:])) if len(name_parts) > 1 else ""
@@ -220,10 +255,10 @@ class ExportService:
 """
             
             if resume.phone:
-                latex += r"\phone[mobile]{" + escape_latex(resume.phone) + r"}\n"
+                latex += "\\phone[mobile]{" + escape_latex(resume.phone) + "}\n"
             
             if resume.linkedin:
-                latex += r"\social[linkedin]{" + escape_latex(resume.linkedin) + r"}\n"
+                latex += "\\social[linkedin]{" + escape_latex(resume.linkedin) + "}\n"
             
             latex += r"""
 \begin{document}
@@ -240,6 +275,8 @@ class ExportService:
             if resume.experience:
                 latex += r"\section{Experience}" + "\n"
                 for exp in resume.experience:
+                    if not isinstance(exp, dict):
+                        continue
                     duration = escape_latex(exp.get('duration', ''))
                     role = escape_latex(exp.get('role', ''))
                     company = escape_latex(exp.get('company', ''))
@@ -251,6 +288,8 @@ class ExportService:
             if resume.education:
                 latex += r"\section{Education}" + "\n"
                 for edu in resume.education:
+                    if not isinstance(edu, dict):
+                        continue
                     year = escape_latex(str(edu.get('graduation_year', '')))
                     degree = escape_latex(edu.get('degree', ''))
                     institution = escape_latex(edu.get('institution', ''))
@@ -260,7 +299,7 @@ class ExportService:
             # Skills
             if resume.skills:
                 latex += r"\section{Skills}" + "\n"
-                skills_text = ", ".join([escape_latex(skill) for skill in resume.skills])
+                skills_text = ", ".join(escape_latex(skill) for skill in resume.skills if skill)
                 latex += f"\\cvitem{{Core Skills}}{{{skills_text}}}\n\n"
             
             latex += r"""

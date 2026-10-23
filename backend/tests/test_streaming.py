@@ -10,6 +10,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
 from main import app
+from tests.conftest import collect_route_paths
 
 
 client = TestClient(app)
@@ -19,19 +20,19 @@ class TestStreamingEndpointRegistration:
     """Verify all streaming endpoints are registered on the app."""
 
     def test_analyze_endpoint_exists(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/api/stream/analyze" in routes
 
     def test_cover_letter_endpoint_exists(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/api/stream/cover-letter" in routes
 
     def test_chat_endpoint_exists(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/api/stream/chat" in routes
 
     def test_tailor_resume_endpoint_exists(self):
-        routes = [r.path for r in app.routes if hasattr(r, 'path')]
+        routes = collect_route_paths(app)
         assert "/api/stream/tailor-resume" in routes
 
 

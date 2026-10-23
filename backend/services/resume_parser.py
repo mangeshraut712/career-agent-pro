@@ -1,9 +1,11 @@
 """Resume parser for extracting text from various file formats."""
+import io
 import logging
+
 import PyPDF2
 import docx
-import io
-from typing import Optional
+
+from security_utils import MAX_EXTRACTED_CHARS, MAX_PDF_PAGES, ResumeUploadError, validate_resume_filename
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +19,12 @@ class ResumeParser:
         text = ""
         try:
             reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
-            if len(reader.pages) == 0:
+            page_count = len(reader.pages)
+            if page_count == 0:
                 logger.warning("PDF file has no pages")
                 return text
+            if page_count > MAX_PDF_PAGES:
+                raise ResumeUploadError(f"Resume PDF exceeds the {MAX_PDF_PAGES} page limit.")
             
             for page_num, page in enumerate(reader.pages):
                 try:
@@ -32,12 +37,14 @@ class ResumeParser:
             
             if not text.strip():
                 logger.warning("No text extracted from PDF")
-        except PyPDF2.errors.PdfReadError as e:
-            logger.error(f"PDF read error: {str(e)}")
-            raise ValueError(f"Invalid PDF file: {str(e)}")
-        except Exception as e:
-            logger.error(f"PDF extraction error: {str(e)}")
-            raise ValueError(f"Failed to extract text from PDF: {str(e)}")
+        except ResumeUploadError:
+            raise
+        except PyPDF2.errors.PdfReadError:
+            logger.exception("PDF read error")
+            raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
+        except Exception:
+            logger.exception("PDF extraction error")
+            raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
         
         return text.strip()
 
@@ -62,9 +69,11 @@ class ResumeParser:
             
             if not text.strip():
                 logger.warning("No text extracted from DOCX")
-        except Exception as e:
-            logger.error(f"DOCX extraction error: {str(e)}")
-            raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
+        except ResumeUploadError:
+            raise
+        except Exception:
+            logger.exception("DOCX extraction error")
+            raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
         
         return text.strip()
 
@@ -74,23 +83,26 @@ class ResumeParser:
         if not filename:
             raise ValueError("Filename is required")
         
-        filename_lower = filename.lower()
-        
         try:
-            if filename_lower.endswith(".pdf"):
-                return cls.extract_text_from_pdf(file_bytes)
-            elif filename_lower.endswith((".docx", ".doc")):
-                return cls.extract_text_from_docx(file_bytes)
-            elif filename_lower.endswith(".txt"):
-                try:
-                    return file_bytes.decode("utf-8")
-                except UnicodeDecodeError:
-                    return file_bytes.decode("latin-1", errors="ignore")
+            extension = validate_resume_filename(filename)
+            if extension == ".pdf":
+                text = cls.extract_text_from_pdf(file_bytes)
+            elif extension == ".docx":
+                text = cls.extract_text_from_docx(file_bytes)
             else:
-                return file_bytes.decode("utf-8", errors="ignore")
-        except ValueError:
+                try:
+                    text = file_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    text = file_bytes.decode("latin-1", errors="ignore")
+        except ResumeUploadError:
             raise
-        except Exception as e:
-            logger.error(f"Unexpected error extracting text: {str(e)}")
-            raise ValueError(f"Failed to extract text from file: {str(e)}")
+        except ValueError:
+            raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
+        except Exception:
+            logger.exception("Unexpected error extracting text")
+            raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
+
+        if len(text) > MAX_EXTRACTED_CHARS:
+            return text[:MAX_EXTRACTED_CHARS]
+        return text
 

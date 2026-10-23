@@ -1,20 +1,36 @@
 """Main FastAPI application for CareerAgentPro backend."""
-import sys
-import os
 import logging
+import os
+import sys
+import tempfile
+from datetime import datetime, timezone
 from functools import lru_cache
 
 # Add current directory to path for serverless/deployment environments
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException, Body, File, UploadFile, status
+from dotenv import load_dotenv
+from fastapi import Body, FastAPI, File, HTTPException, UploadFile, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from starlette.background import BackgroundTask
 import uvicorn
-from dotenv import load_dotenv
+
+from middleware import RateLimitMiddleware, SecurityHeadersMiddleware
+from env_loader import get_ai_status
+from security_utils import (
+    MAX_BULLETS,
+    MAX_EXTRACTED_CHARS,
+    PUBLIC_SERVER_ERROR,
+    ResumeUploadError,
+    docs_enabled,
+    read_limited_upload,
+    resolve_cors_origins,
+    safe_download_name,
+    validate_resume_filename,
+)
 from schemas import EnhancementRequest, CoverLetterRequest, CommunicationRequest, ResumeData, BulletSelectionRequest, SixPointBullet
 from services.ai_service import AIService
 from services.job_service import JobService
@@ -60,26 +76,61 @@ app = FastAPI(
     title="CareerAgentPro API",
     version="1.0.0",
     description="AI-Powered Career Platform API",
-    # Disable docs in production for faster startup
-    docs_url="/docs" if os.getenv("DEBUG") else None,
+    # Only an explicit DEBUG=true/1/yes/on enables interactive docs.
+    docs_url="/docs" if docs_enabled() else None,
     redoc_url=None,
 )
 
 # Register streaming router (SSE endpoints)
 app.include_router(streaming_router)
 
-# Add GZip compression for responses > 500 bytes
+# Middleware is outermost-last. CORS must stay outside rate limiting so
+# browser clients can read 429 responses. Security headers wrap both.
 app.add_middleware(GZipMiddleware, minimum_size=500)
-
-# Configure CORS with optimized settings
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=resolve_cors_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
     max_age=86400,  # Cache preflight for 24 hours
 )
+
+
+def _remove_temp_file(path: str) -> None:
+    try:
+        os.remove(path)
+    except OSError:
+        logger.warning("Could not remove temporary export %s", path)
+
+
+async def _load_resume_text(file: UploadFile) -> str:
+    """Validate, size-cap, and extract text from a resume upload."""
+    filename = file.filename or ""
+    try:
+        validate_resume_filename(filename)
+        content = await read_limited_upload(file)
+        text = ResumeParser.extract_text(content, filename)
+    except ResumeUploadError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.public_message) from exc
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to read resume upload")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not read file. Supported formats: PDF, DOCX, TXT.",
+        )
+    if not text or not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not extract text from resume. Please ensure the file contains readable text.",
+        )
+    if len(text) > MAX_EXTRACTED_CHARS:
+        return text[:MAX_EXTRACTED_CHARS]
+    return text
 
 # Cached service initialization for better performance
 @lru_cache()
@@ -127,52 +178,32 @@ async def general_exception_handler(request, exc):
 async def parse_resume(file: UploadFile = File(...)):
     """Parse resume file and extract structured data."""
     try:
-        # Read file content
-        content = await file.read()
-        filename = file.filename or "unknown.pdf"
-        
-        # Extract text from file
-        try:
-            text = ResumeParser.extract_text(content, filename)
-        except Exception as extract_err:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Could not read file. Supported formats: PDF, DOCX, TXT. Error: {type(extract_err).__name__}"
-            )
-        
-        if not text or not text.strip():
-            raise HTTPException(
-                status_code=400, 
-                detail="Could not extract text from resume. Please ensure the file contains readable text."
-            )
-        
-        # Parse the extracted text
-        try:
-            parsed_data = await ai_service.parse_resume(text)
-            logger.info(f"Successfully parsed resume: {filename}")
-            return parsed_data
-        except Exception as parse_err:
-            logger.error(f"Error parsing resume: {str(parse_err)}", exc_info=True)
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Error parsing resume content: {type(parse_err).__name__}"
-            )
-            
+        text = await _load_resume_text(file)
+        parsed_data = await ai_service.parse_resume(text)
+        logger.info("Successfully parsed resume: %s", file.filename)
+        return parsed_data
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Unexpected error processing resume: {str(e)}", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected error processing resume")
         raise HTTPException(
-            status_code=500, 
-            detail=f"Unexpected error processing resume: {type(e).__name__}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to parse resume",
         )
+
+
+@app.post("/parse-resume-stream")
+async def parse_resume_stream(file: UploadFile = File(...)):
+    """Stream resume parsing progress. Used by the profile uploader."""
+    text = await _load_resume_text(file)
+    return StreamingResponse(
+        ai_service.stream_parse_resume(text),
+        media_type="text/event-stream",
+    )
 
 @app.get("/health")
 async def health():
-    """Comprehensive health check endpoint with API key status."""
-    from datetime import datetime
-    from env_loader import get_ai_status
-    
+    """Health check. Does not report API key material or key length."""
     is_vercel = os.getenv("VERCEL") == "1" or os.getenv("ENVIRONMENT") == "production"
     ai_status = get_ai_status()
     
@@ -181,18 +212,15 @@ async def health():
         "service": "CareerAgentPro",
         "version": "1.0.0",
         "environment": "vercel" if is_vercel else "development",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "checks": {
             "api": "ok",
             "ai_service": ai_status["mode"],
-            "api_key_present": ai_status["api_key_present"],
-            "api_key_valid": ai_status["api_key_valid"],
         },
         "ai_configuration": {
             "enabled": ai_status["ai_enabled"],
             "model": ai_status["model"],
             "mode": ai_status["mode"],
-            "api_key_length": ai_status["api_key_length"],
         },
         "features": {
             "resume_parsing": True,
@@ -307,23 +335,25 @@ async def generate_communication(request: CommunicationRequest):
 @app.post("/export/docx")
 async def export_docx(resume: ResumeData):
     """Export resume as DOCX file."""
+    output_path = ""
     try:
-        import tempfile
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_file:
             output_path = tmp_file.name
-        
+
         export_service.to_docx(resume, output_path)
-        
+
         response = FileResponse(
             output_path,
-            filename=f"{resume.name.replace(' ', '_')}_resume.docx",
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            filename=safe_download_name(resume.name, "docx"),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            background=BackgroundTask(_remove_temp_file, output_path),
         )
-        logger.info(f"DOCX export completed for: {resume.name}")
+        logger.info("DOCX export completed")
         return response
-    except Exception as e:
-        logger.error(f"Failed to export DOCX: {str(e)}", exc_info=True)
+    except Exception:
+        if output_path:
+            _remove_temp_file(output_path)
+        logger.exception("Failed to export DOCX")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to export resume as DOCX"
@@ -332,23 +362,25 @@ async def export_docx(resume: ResumeData):
 @app.post("/export/pdf")
 async def export_pdf(resume: ResumeData):
     """Export resume as PDF file."""
+    output_path = ""
     try:
-        import tempfile
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             output_path = tmp_file.name
-        
+
         export_service.to_pdf(resume, output_path)
-        
+
         response = FileResponse(
             output_path,
-            filename=f"{resume.name.replace(' ', '_')}_resume.pdf",
-            media_type="application/pdf"
+            filename=safe_download_name(resume.name, "pdf"),
+            media_type="application/pdf",
+            background=BackgroundTask(_remove_temp_file, output_path),
         )
-        logger.info(f"PDF export completed for: {resume.name}")
+        logger.info("PDF export completed")
         return response
-    except Exception as e:
-        logger.error(f"Failed to export PDF: {str(e)}", exc_info=True)
+    except Exception:
+        if output_path:
+            _remove_temp_file(output_path)
+        logger.exception("Failed to export PDF")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to export resume as PDF"
@@ -467,6 +499,12 @@ async def analyze_bullets(data: dict = Body(...)):
         
         if isinstance(bullets, str):
             bullets = [b.strip() for b in bullets.split("\n") if b.strip()]
+
+        if len(bullets) > MAX_BULLETS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A maximum of {MAX_BULLETS} bullets can be analyzed at once.",
+            )
         
         # Analyze each bullet
         analyses = []
@@ -563,6 +601,12 @@ async def analyze_complete_resume_endpoint(data: dict = Body(...)):
         
         if isinstance(bullets, str):
             bullets = [b.strip() for b in bullets.split("\n") if b.strip()]
+
+        if len(bullets) > MAX_BULLETS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A maximum of {MAX_BULLETS} bullets can be analyzed at once.",
+            )
         
         # Run complete analysis
         analysis = analyze_complete_resume(bullets)
@@ -892,7 +936,7 @@ async def validate_bullet_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to validate bullet: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to validate bullet: {str(e)}"
+            detail="Failed to validate bullet"
         )
 
 
@@ -943,7 +987,7 @@ async def assess_competencies_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to assess competencies: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assess competencies: {str(e)}"
+            detail="Failed to assess competencies"
         )
 
 
@@ -990,7 +1034,7 @@ async def spin_text_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to spin text: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to spin text: {str(e)}"
+            detail="Failed to spin text"
         )
 
 
@@ -1041,7 +1085,7 @@ async def verify_resume_quality_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to verify resume quality: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to verify resume quality: {str(e)}"
+            detail="Failed to verify resume quality"
         )
 
 
@@ -1069,7 +1113,7 @@ async def langchain_analyze_fit_endpoint(data: dict = Body(...)):
         raise
     except Exception as e:
         logger.error(f"LangChain analyze-fit failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=PUBLIC_SERVER_ERROR)
 
 
 @app.post("/langchain/tailor-resume")
@@ -1092,7 +1136,7 @@ async def langchain_tailor_resume_endpoint(data: dict = Body(...)):
         raise
     except Exception as e:
         logger.error(f"LangChain tailor-resume failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=PUBLIC_SERVER_ERROR)
 
 
 @app.post("/langchain/cover-letter")
@@ -1117,7 +1161,7 @@ async def langchain_cover_letter_endpoint(data: dict = Body(...)):
         raise
     except Exception as e:
         logger.error(f"LangChain cover-letter failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=PUBLIC_SERVER_ERROR)
 
 
 @app.post("/langchain/full-pipeline")
@@ -1143,7 +1187,7 @@ async def langchain_full_pipeline_endpoint(data: dict = Body(...)):
         raise
     except Exception as e:
         logger.error(f"LangChain pipeline failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=PUBLIC_SERVER_ERROR)
 
 
 if __name__ == "__main__":

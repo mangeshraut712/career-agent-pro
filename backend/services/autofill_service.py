@@ -1,5 +1,26 @@
 import json
 
+
+def json_for_script(value) -> str:
+    """JSON that cannot close an HTML script element when the snippet is embedded."""
+    encoded = json.dumps(value, ensure_ascii=True)
+    return (
+        encoded.replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+def _as_text(value, limit: int = 500):
+    if isinstance(value, str):
+        return value[:limit]
+    if isinstance(value, (int, float, bool)):
+        return str(value)
+    return None
+
+
 class AutofillService:
     @staticmethod
     def get_field_mappings(platform: str):
@@ -37,7 +58,22 @@ class AutofillService:
                 "phone": ["phone"],
                 "linkedin": ["urls[LinkedIn]"],
                 "website": ["urls[Portfolio]"],
-            }
+            },
+            "indeed": {
+                "first_name": ["applicant.firstName", "firstName", "first_name"],
+                "last_name": ["applicant.lastName", "lastName", "last_name"],
+                "email": ["applicant.email", "email"],
+                "phone": ["applicant.phoneNumber", "phone"],
+                "location": ["applicant.location", "city"],
+            },
+            "linkedin": {
+                "first_name": ["firstName", "first-name"],
+                "last_name": ["lastName", "last-name"],
+                "email": ["emailAddress", "email"],
+                "phone": ["phoneNumber", "phone"],
+                "linkedin": ["linkedin"],
+                "location": ["location"],
+            },
         }
         return mappings.get(platform.lower(), mappings["google"])
     
@@ -55,32 +91,39 @@ class AutofillService:
         last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
         
         data_to_fill = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "full_name": name,
-            "email": resume_data.get("email"),
-            "phone": resume_data.get("phone"),
-            "linkedin": resume_data.get("linkedin"),
-            "website": resume_data.get("website"),
-            "location": resume_data.get("location", "Philadelphia, PA"),
+            "first_name": _as_text(first_name),
+            "last_name": _as_text(last_name),
+            "full_name": _as_text(name),
+            "email": _as_text(resume_data.get("email")),
+            "phone": _as_text(resume_data.get("phone")),
+            "linkedin": _as_text(resume_data.get("linkedin")),
+            "website": _as_text(resume_data.get("website")),
+            "location": _as_text(resume_data.get("location")) or "Philadelphia, PA",
             "is_authorized_us": "Yes" if resume_data.get("is_authorized_us") else "No",
             "requires_sponsorship": "Yes" if resume_data.get("requires_sponsorship") else "No",
-            "gender": resume_data.get("gender"),
-            "race": resume_data.get("race"),
-            "disability": resume_data.get("disability"),
-            "is_veteran": resume_data.get("is_veteran"),
-            "sexual_orientation": resume_data.get("sexual_orientation")
+            "gender": _as_text(resume_data.get("gender")),
+            "race": _as_text(resume_data.get("race")),
+            "disability": _as_text(resume_data.get("disability")),
+            "is_veteran": _as_text(resume_data.get("is_veteran")),
+            "sexual_orientation": _as_text(resume_data.get("sexual_orientation"))
         }
         
-        # Merge custom learned questions
+        # Merge custom learned questions as plain strings only.
         custom_q = resume_data.get("custom_questions", {})
-        data_to_fill.update(custom_q)
+        safe_custom = {}
+        if isinstance(custom_q, dict):
+            for key, value in list(custom_q.items())[:50]:
+                text_key = _as_text(key, limit=200)
+                text_value = _as_text(value)
+                if text_key and text_value is not None:
+                    safe_custom[text_key] = text_value
+        data_to_fill.update(safe_custom)
         
         js_code = f"""
         (function() {{
-            const mapping = {json.dumps(mapping)};
-            const data = {json.dumps(data_to_fill)};
-            const customQuestions = {json.dumps(custom_q)};
+            const mapping = {json_for_script(mapping)};
+            const data = {json_for_script(data_to_fill)};
+            const customQuestions = {json_for_script(safe_custom)};
             
             function fillField(selectors, value) {{
                 if (!value) return false;

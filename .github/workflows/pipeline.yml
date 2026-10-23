@@ -36,10 +36,16 @@ jobs:
           cache-dependency-path: './frontend/package-lock.json'
       
       - name: 📚 Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: 🔍 Lint check
         run: npm run lint
+
+      - name: 🔎 Type check
+        run: npm run type-check
+
+      - name: 🧪 Unit tests
+        run: npm test
       
       - name: 🏗️ Build application
         run: npm run build
@@ -82,14 +88,14 @@ jobs:
           python -m pip install --upgrade 'pip>=26.2.2'
           pip install -r requirements.txt
       
-      - name: 🔍 Syntax check
-        run: python -m py_compile main.py
-      
-      - name: 🔍 Type checking (optional)
-        continue-on-error: true
+      - name: 🔍 Lint
         run: |
-          pip install mypy
-          mypy main.py --ignore-missing-imports || true
+          pip install ruff mypy
+          ruff check .
+          mypy security_utils.py auth_utils.py --ignore-missing-imports
+
+      - name: 🧪 Tests
+        run: pytest
       
       - name: 📊 Report
         run: |

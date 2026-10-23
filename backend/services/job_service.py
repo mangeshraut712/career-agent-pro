@@ -1,10 +1,16 @@
-import trafilatura
-import httpx
-import re
+import html as html_lib
+import ipaddress
 import json
-from typing import Optional, List
+import re
+import socket
+from html.parser import HTMLParser
+from typing import List, Optional
+from urllib.parse import urlparse, urlunparse
 
-from urllib.parse import urlparse
+import httpx
+import trafilatura
+from bs4 import BeautifulSoup
+
 from schemas import JobDescription
 from services.ai_service import AIService
 
@@ -37,22 +43,49 @@ class JobService:
         self.ai_service = ai_service
     
     def _is_allowed_url(self, url: str) -> bool:
-        """Validate URL against allowlist to prevent SSRF attacks"""
+        """Validate URL against allowlist to prevent SSRF attacks."""
         try:
             parsed = urlparse(url)
-            # Only allow http/https schemes
-            if parsed.scheme not in ("http", "https"):
-                return False
-            domain = parsed.netloc.lower()
-            # Strict allowlist check - no exceptions
-            for allowed in ALLOWED_DOMAINS:
-                if domain == allowed or domain.endswith("." + allowed):
-                    return True
-            return False  # Reject unlisted domains
         except Exception:
             return False
+        if parsed.scheme not in ("http", "https"):
+            return False
+        if parsed.username or parsed.password:
+            return False
+        if parsed.port not in (None, 80, 443):
+            return False
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        if not hostname:
+            return False
+        try:
+            ipaddress.ip_address(hostname)
+            return False
+        except ValueError:
+            pass
+        for allowed in ALLOWED_DOMAINS:
+            if hostname == allowed or hostname.endswith("." + allowed):
+                return True
+        return False
+
+    def _resolves_to_public_ips(self, hostname: str) -> bool:
+        """Reject allowlisted names that resolve to loopback, link-local, or private space."""
+        try:
+            infos = socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            return False
+        if not infos:
+            return False
+        for info in infos:
+            raw_ip = info[4][0].split("%", 1)[0]
+            try:
+                address = ipaddress.ip_address(raw_ip)
+            except ValueError:
+                return False
+            if not address.is_global:
+                return False
+        return True
     
-    async def _fetch_with_httpx(self, url: str) -> Optional[str]:
+    async def _fetch_with_httpx(self, url: str, user_agent: Optional[str] = None) -> Optional[str]:
         """Fetch URL content using httpx with SSRF protection.
         
         This method performs inline URL validation for CodeQL compatibility.
@@ -66,14 +99,22 @@ class JobService:
         # Only allow https scheme
         if parsed.scheme != "https":
             return None
-            
-        hostname = parsed.netloc.lower()
-        
-        # Block private IPs inline
-        if (hostname == "localhost" or 
+        if parsed.username or parsed.password:
+            return None
+        if parsed.port not in (None, 443):
+            return None
+
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        if not hostname:
+            return None
+
+        # Block raw addresses and well-known non-routable names before the allowlist.
+        if (hostname == "localhost" or
             hostname.startswith("127.") or
             hostname.startswith("10.") or
             hostname.startswith("192.168.") or
+            hostname.startswith("169.254.") or
+            hostname.startswith("0.") or
             hostname.startswith("172.16.") or
             hostname.startswith("172.17.") or
             hostname.startswith("172.18.") or
@@ -94,14 +135,17 @@ class JobService:
         
         if not is_allowed:
             return None
+
+        if not self._resolves_to_public_ips(hostname):
+            return None
         
-        # Reconstruct URL from validated components
+        # Reconstruct URL from validated components. Do not reuse the raw input.
         safe_url = f"https://{hostname}{parsed.path}"
         if parsed.query:
             safe_url += f"?{parsed.query}"
         
         headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; JobHelper/1.0)",
+            "User-Agent": user_agent or "Mozilla/5.0 (compatible; JobHelper/1.0)",
             "Accept": "text/html",
         }
         try:
@@ -130,8 +174,6 @@ class JobService:
         
         # Fallback: Use html.parser (safer than regex)
         try:
-            from html.parser import HTMLParser
-            
             class TextExtractor(HTMLParser):
                 def __init__(self):
                     super().__init__()
@@ -160,8 +202,6 @@ class JobService:
     def _extract_from_meta_tags(self, html_content: str) -> str:
         """Extract job content from HTML - includes meta tags, LinkedIn show-more content, and structured data"""
         try:
-            from bs4 import BeautifulSoup
-            import html as html_lib
             soup = BeautifulSoup(html_content, 'html.parser')
             
             parts = []
@@ -277,6 +317,10 @@ class JobService:
         Security: Only allowed domains can be fetched (SSRF protection).
         """
         # Security: Validate URL against allowlist
+        parsed_input = urlparse(url)
+        if parsed_input.scheme == "http" and parsed_input.netloc:
+            url = urlunparse(parsed_input._replace(scheme="https"))
+
         if not self._is_allowed_url(url):
             return JobDescription(
                 title="Unsupported Job Board",
@@ -312,17 +356,18 @@ class JobService:
         if html_content:
             content = self._extract_text_from_html(html_content)
         
-        # Method 2: Fallback to trafilatura if httpx didn't get enough content
-        # SECURITY: safe_url has been validated against our allowlist
+        # Second fetch uses a browser user agent, still with redirects disabled
+        # and the same allowlist. trafilatura.fetch_url follows redirects and
+        # would let an allowed host pivot to an internal address.
         if not content or len(content.strip()) < 100:
-            try:
-                downloaded = trafilatura.fetch_url(safe_url)
-                if downloaded:
-                    t_content = trafilatura.extract(downloaded)
-                    if t_content and len(t_content) > len(content or ""):
-                        content = t_content
-            except Exception:
-                pass
+            html_content = await self._fetch_with_httpx(
+                safe_url,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            )
+            if html_content:
+                extracted = self._extract_text_from_html(html_content)
+                if extracted and len(extracted) > len(content or ""):
+                    content = extracted
         
         # Check if we got a login page instead of job content
         if content and self._is_login_page(content):

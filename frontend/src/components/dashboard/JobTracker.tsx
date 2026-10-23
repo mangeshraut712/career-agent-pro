@@ -79,6 +79,7 @@ export function JobTracker({ jobs, onUpdateStatus, onDelete }: JobTrackerProps) 
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <select
                                         value={job.status}
+                                        aria-label={`Application status for ${job.title}`}
                                         onChange={(e) => onUpdateStatus(job.id, e.target.value as TrackedJob["status"])}
                                         className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer shadow-sm ${STATUS_CONFIG[job.status].color}`}
                                     >
@@ -90,12 +91,15 @@ export function JobTracker({ jobs, onUpdateStatus, onDelete }: JobTrackerProps) 
                                         href={sanitizeUrl(job.url)}
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        aria-label={`Open job posting for ${job.title}`}
                                         className="p-2 rounded-lg hover:bg-background/50 transition-colors"
                                     >
                                         <ExternalLink size={14} className="text-muted-foreground hover:text-primary transition-colors" />
                                     </a>
                                     <button
+                                        type="button"
                                         onClick={() => onDelete(job.id)}
+                                        aria-label={`Remove ${job.title} from tracker`}
                                         className="p-2 rounded-lg hover:bg-background/50 transition-colors text-muted-foreground hover:text-destructive"
                                     >
                                         <Trash2 size={14} />
