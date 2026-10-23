@@ -1,9 +1,11 @@
 """Custom middleware for the FastAPI application."""
+import os
 import time
 import logging
 from typing import Callable
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
+from starlette.datastructures import MutableHeaders
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -54,8 +56,72 @@ class RateLimiter:
             del self.requests[key]
 
 
+def _configured_rate_limit() -> int:
+    raw = os.getenv("RATE_LIMIT_PER_MINUTE", "60")
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 60
+
+
 # Global rate limiter instance
-rate_limiter = RateLimiter()
+rate_limiter = RateLimiter(_configured_rate_limit())
+
+
+class RateLimitMiddleware:
+    """ASGI rate limit that does not buffer streaming response bodies."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        method = scope.get("method", "GET")
+        if method == "OPTIONS" or path in {"/", "/health"}:
+            await self.app(scope, receive, send)
+            return
+
+        client = scope.get("client")
+        client_id = client[0] if client else "unknown"
+        if not rate_limiter.is_allowed(client_id):
+            response = JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "error": "Rate limit exceeded",
+                    "message": "Too many requests. Please try again later.",
+                },
+            )
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+
+class SecurityHeadersMiddleware:
+    """Add response security headers without buffering the body."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["X-Frame-Options"] = "DENY"
+                headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+                headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
 
 
 async def rate_limit_middleware(request: Request, call_next: Callable) -> Response:

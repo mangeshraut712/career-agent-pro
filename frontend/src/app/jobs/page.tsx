@@ -16,6 +16,7 @@ import { secureGet, secureSet } from "@/lib/secureStorage";
 import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { JobScanner } from "@/components/jobs/JobScanner";
 import { AnalysisResult } from "@/components/jobs/AnalysisResult";
+import { calculateMatchScore } from "@/lib/matchScore";
 
 interface AnalyzedJob {
     id: string;
@@ -75,17 +76,6 @@ export default function AnalyzeJobPage() {
         loadData();
     }, []);
 
-    const calculateMatchScore = (jobSkills: string[]) => {
-        if (!jobSkills?.length || !profile?.skills?.length) return 0;
-        const matched = jobSkills.filter(skill =>
-            profile.skills.some((us: string) =>
-                us.toLowerCase().includes(skill.toLowerCase()) ||
-                skill.toLowerCase().includes(us.toLowerCase())
-            )
-        );
-        return Math.round((matched.length / jobSkills.length) * 100);
-    };
-
     const handleAnalyze = async (jobUrl: string) => {
         if (!jobUrl.trim() || !jobUrl.startsWith('http')) {
             toast("Please enter a valid job URL", "error");
@@ -126,8 +116,8 @@ export default function AnalyzeJobPage() {
                 analyzedAt: new Date().toISOString(),
             };
 
-            if (profile) {
-                analyzedJob.matchScore = calculateMatchScore(analyzedJob.skills);
+            if (profile?.skills?.length) {
+                analyzedJob.matchScore = calculateMatchScore(analyzedJob.skills, profile.skills);
             }
 
             setCurrentJob(analyzedJob);

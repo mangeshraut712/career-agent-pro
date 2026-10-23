@@ -44,13 +44,13 @@ def get_openrouter_api_key() -> str:
     # Try 1: Direct environment access (Vercel sets this)
     api_key = os.environ.get('OPENROUTER_API_KEY', '')
     if api_key:
-        print(f"✅ OPENROUTER_API_KEY loaded from environment (length: {len(api_key)})")
+        print("✅ OPENROUTER_API_KEY loaded from environment")
         return api_key
     
     # Try 2: Alternative  environment variable name
     api_key = os.environ.get('OPENROUTER_KEY', '')
     if api_key:
-        print(f"✅ OPENROUTER_KEY loaded from environment (length: {len(api_key)})")
+        print("✅ OPENROUTER_KEY loaded from environment")
         return api_key
     
     # Try 3: Read .env file directly as fallback
@@ -61,7 +61,7 @@ def get_openrouter_api_key() -> str:
                     if line.strip().startswith('OPENROUTER_API_KEY='):
                         api_key = line.split('=', 1)[1].strip().strip('"').strip("'")
                         if api_key:
-                            print(f"✅ OPENROUTER_API_KEY loaded from .env file (length: {len(api_key)})")
+                            print("✅ OPENROUTER_API_KEY loaded from .env file")
                             return api_key
         except Exception as e:
             print(f"⚠️  Could not read .env file: {e}")
@@ -89,7 +89,7 @@ def validate_api_key(api_key: str) -> bool:
     
     # Basic validation
     if len(api_key) < 20:
-        print(f"⚠️  API key too short (length: {len(api_key)})")
+        print("⚠️  API key too short")
         return False
     
     # OpenRouter keys usually start with specific prefix
@@ -155,7 +155,6 @@ def get_ai_status() -> dict:
         "ai_enabled": is_ai_enabled(),
         "api_key_present": bool(OPENROUTER_API_KEY),
         "api_key_valid": IS_API_KEY_VALID,
-        "api_key_length": len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0,
         "mode": "AI" if is_ai_enabled() else "Fallback",
         "model": "qwen/qwen-2.5-coder-32b-instruct" if is_ai_enabled() else "Heuristic",
     }

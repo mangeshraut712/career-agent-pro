@@ -45,6 +45,19 @@ def _get_model() -> str:
     return os.getenv("STREAMING_MODEL", "google/gemini-2.0-flash-exp:free")
 
 
+MAX_JOB_DESCRIPTION_CHARS = 20_000
+MAX_RESUME_DATA_CHARS = 50_000
+MAX_CHAT_MESSAGE_CHARS = 4_000
+MAX_CHAT_CONTEXT_CHARS = 20_000
+ALLOWED_TEMPLATE_TYPES = frozenset({
+    "professional",
+    "modern",
+    "minimalist",
+    "creative",
+    "apply_pilot",
+})
+
+
 async def _stream_llm(
     system_prompt: str,
     user_prompt: str,
@@ -74,7 +87,7 @@ async def _stream_llm(
 
     except Exception as e:
         logger.error(f"Streaming failed: {e}", exc_info=True)
-        yield {"event": "error", "data": json.dumps({"error": str(e)})}
+        yield {"event": "error", "data": json.dumps({"error": "Streaming failed"})}
 
 
 # ---------------------------------------------------------------------------
@@ -83,8 +96,8 @@ async def _stream_llm(
 
 @router.get("/analyze")
 async def stream_job_analysis(
-    job_description: str = Query(..., min_length=10),
-    resume_data: str = Query("{}", min_length=2),
+    job_description: str = Query(..., min_length=10, max_length=MAX_JOB_DESCRIPTION_CHARS),
+    resume_data: str = Query("{}", min_length=2, max_length=MAX_RESUME_DATA_CHARS),
 ):
     """
     Stream real-time job fit analysis.
@@ -116,14 +129,17 @@ Be specific, honest, and actionable. Structure your response with:
 
 @router.get("/cover-letter")
 async def stream_cover_letter(
-    job_description: str = Query(..., min_length=10),
-    resume_data: str = Query("{}", min_length=2),
-    template_type: str = Query("professional"),
+    job_description: str = Query(..., min_length=10, max_length=MAX_JOB_DESCRIPTION_CHARS),
+    resume_data: str = Query("{}", min_length=2, max_length=MAX_RESUME_DATA_CHARS),
+    template_type: str = Query("professional", max_length=32),
 ):
     """
     Stream a cover letter being written in real-time.
     The user watches the letter being composed word by word.
     """
+    if template_type not in ALLOWED_TEMPLATE_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid template type")
+
     system_prompt = f"""You are an expert cover letter writer.
 Write a {template_type} cover letter for this application.
 Requirements:
@@ -147,8 +163,8 @@ Requirements:
 
 @router.get("/chat")
 async def stream_career_chat(
-    message: str = Query(..., min_length=1),
-    context: str = Query(""),
+    message: str = Query(..., min_length=1, max_length=MAX_CHAT_MESSAGE_CHARS),
+    context: str = Query("", max_length=MAX_CHAT_CONTEXT_CHARS),
 ):
     """
     Stream a career coaching conversation.
@@ -173,8 +189,8 @@ Use frameworks and specific examples."""
 
 @router.get("/tailor-resume")
 async def stream_resume_tailoring(
-    job_description: str = Query(..., min_length=10),
-    resume_data: str = Query("{}", min_length=2),
+    job_description: str = Query(..., min_length=10, max_length=MAX_JOB_DESCRIPTION_CHARS),
+    resume_data: str = Query("{}", min_length=2, max_length=MAX_RESUME_DATA_CHARS),
 ):
     """
     Stream resume tailoring suggestions in real-time.

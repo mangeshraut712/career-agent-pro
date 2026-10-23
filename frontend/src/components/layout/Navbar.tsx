@@ -31,15 +31,23 @@ export function Navbar() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  // Scroll handling effect
+  // One update per frame, and a passive listener so scrolling is not blocked.
   useEffect(() => {
+    let frame = 0;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const next = window.scrollY > 20;
+        setScrolled((current) => (current === next ? current : next));
+      });
     };
-    // Check initial scroll position
     handleScroll();
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   // Use consistent base class for SSR to avoid hydration mismatch
@@ -50,6 +58,7 @@ export function Navbar() {
 
   return (
     <motion.nav
+      aria-label="Primary"
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
@@ -120,7 +129,7 @@ export function Navbar() {
             <ThemeToggle />
 
             {/* Profile Link (Icon) */}
-            <Link href="/profile" className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+            <Link href="/profile" aria-label="Profile" className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
               <User size={18} />
             </Link>
 
@@ -147,7 +156,9 @@ export function Navbar() {
               whileTap={{ scale: 0.95 }}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2.5 rounded-xl hover:bg-secondary/80 active:bg-secondary transition-colors"
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -173,6 +184,7 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
+            id="mobile-nav"
             className="lg:hidden border-t border-border/30 bg-background/95 backdrop-blur-xl overflow-hidden"
           >
             <div className="px-4 py-5 space-y-1 max-w-lg mx-auto">

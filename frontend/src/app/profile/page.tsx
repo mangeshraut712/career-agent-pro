@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     User, Mail, Phone, MapPin, Globe, Linkedin, Github, Briefcase,
@@ -14,6 +14,14 @@ import { AppleButton } from "@/components/ui/AppleButton";
 import { useToast } from "@/components/ui/Toast";
 import { secureGet, secureSet } from "@/lib/secureStorage";
 import { FADE_IN } from "@/lib/animations";
+import { validateResumeFile } from "@/lib/resumeFile";
+
+function editOnKeyDown(event: KeyboardEvent, onEdit: () => void) {
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onEdit();
+    }
+}
 
 interface Experience {
     id: string;
@@ -144,7 +152,6 @@ export default function ProfilePage() {
 
     const handleSave = async () => {
         setIsSaving(true);
-        await new Promise(r => setTimeout(r, 600));
         secureSet('profile', profile);
         toast("Profile synchronized!", "success");
         setSaveSuccess(true);
@@ -155,6 +162,12 @@ export default function ProfilePage() {
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const validationError = validateResumeFile(file);
+        if (validationError) {
+            toast(validationError, "error");
+            e.target.value = "";
+            return;
+        }
         setIsParsing(true);
         setParsingMessage("Initializing neural extraction...");
 
@@ -372,7 +385,7 @@ export default function ProfilePage() {
                             </div>
 
                             <div className="flex flex-wrap justify-center gap-4">
-                                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleFileUpload} className="hidden" />
+                                <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt" aria-label="Upload resume as PDF, DOCX, or TXT" onChange={handleFileUpload} className="hidden" />
                                 <AppleButton
                                     variant="secondary"
                                     onClick={() => fileInputRef.current?.click()}
@@ -832,22 +845,22 @@ function ExperienceNode({ exp, isEditing, onEdit, onSave, onUpdate, onDelete }: 
             <div className="p-8 border-2 border-purple-500/30 rounded-[2rem] space-y-6 bg-purple-50/10 backdrop-blur-sm">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Context</label>
-                        <input value={exp.role} onChange={(e) => onUpdate(exp.id, "role", e.target.value)} placeholder="Role Title" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
-                        <input value={exp.company} onChange={(e) => onUpdate(exp.id, "company", e.target.value)} placeholder="Organization" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <label htmlFor={`exp-${exp.id}-role`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Context</label>
+                        <input id={`exp-${exp.id}-role`} aria-label="Role title" value={exp.role} onChange={(e) => onUpdate(exp.id, "role", e.target.value)} placeholder="Role Title" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <input id={`exp-${exp.id}-company`} aria-label="Organization" value={exp.company} onChange={(e) => onUpdate(exp.id, "company", e.target.value)} placeholder="Organization" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Logistics</label>
-                        <input value={exp.location} onChange={(e) => onUpdate(exp.id, "location", e.target.value)} placeholder="Location" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <label htmlFor={`exp-${exp.id}-location`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Logistics</label>
+                        <input id={`exp-${exp.id}-location`} aria-label="Location" value={exp.location} onChange={(e) => onUpdate(exp.id, "location", e.target.value)} placeholder="Location" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                         <div className="flex gap-2">
-                            <input value={exp.startDate} onChange={(e) => onUpdate(exp.id, "startDate", e.target.value)} placeholder="Start Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
-                            <input value={exp.endDate} onChange={(e) => onUpdate(exp.id, "endDate", e.target.value)} placeholder="End Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                            <input aria-label="Start date" value={exp.startDate} onChange={(e) => onUpdate(exp.id, "startDate", e.target.value)} placeholder="Start Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                            <input aria-label="End date" value={exp.endDate} onChange={(e) => onUpdate(exp.id, "endDate", e.target.value)} placeholder="End Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                         </div>
                     </div>
                 </div>
                 <div className="space-y-4">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Impact Narrative</label>
-                    <textarea value={exp.description} onChange={(e) => onUpdate(exp.id, "description", e.target.value)} placeholder="Describe your results..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-purple-500/20 resize-none" />
+                    <label htmlFor={`exp-${exp.id}-description`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Impact Narrative</label>
+                    <textarea id={`exp-${exp.id}-description`} aria-label="Impact narrative" value={exp.description} onChange={(e) => onUpdate(exp.id, "description", e.target.value)} placeholder="Describe your results..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-purple-500/20 resize-none" />
                 </div>
                 <div className="flex justify-end items-center gap-6">
                     <button onClick={onDelete} className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors">Delete Node</button>
@@ -858,8 +871,12 @@ function ExperienceNode({ exp, isEditing, onEdit, onSave, onUpdate, onDelete }: 
     }
     return (
         <motion.div
+            role="button"
+            tabIndex={0}
+            aria-label={`Edit ${exp.role || "experience"}`}
             whileHover={{ y: -4, scale: 1.01 }}
             onClick={onEdit}
+            onKeyDown={(event) => editOnKeyDown(event, onEdit)}
             className="p-6 border border-border/40 rounded-[2rem] hover:border-purple-500/40 hover:bg-purple-500/[0.02] cursor-pointer transition-all flex items-start gap-6 group bg-card shadow-sm"
         >
             <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">{exp.company?.charAt(0) || "?"}</div>
@@ -903,12 +920,12 @@ function ProjectNode({ proj, isEditing, onEdit, onSave, onUpdate, onDelete }: Pr
         return (
             <div className="p-8 border-2 border-indigo-500/30 rounded-[2rem] space-y-6 bg-indigo-50/10 backdrop-blur-sm">
                 <div className="space-y-4">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Project Name</label>
-                    <input value={proj.name} onChange={(e) => onUpdate(proj.id, "name", e.target.value)} placeholder="e.g. AI Career Assistant" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                    <label htmlFor={`proj-${proj.id}-name`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Project Name</label>
+                    <input id={`proj-${proj.id}-name`} aria-label="Project name" value={proj.name} onChange={(e) => onUpdate(proj.id, "name", e.target.value)} placeholder="e.g. AI Career Assistant" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" />
                 </div>
                 <div className="space-y-4">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Strategic Impact</label>
-                    <textarea value={proj.description} onChange={(e) => onUpdate(proj.id, "description", e.target.value)} placeholder="Describe technologies used and outcome..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
+                    <label htmlFor={`proj-${proj.id}-description`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Strategic Impact</label>
+                    <textarea id={`proj-${proj.id}-description`} aria-label="Project impact" value={proj.description} onChange={(e) => onUpdate(proj.id, "description", e.target.value)} placeholder="Describe technologies used and outcome..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
                 </div>
                 <div className="flex justify-end items-center gap-6">
                     <button onClick={onDelete} className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors">Delete Project</button>
@@ -919,8 +936,12 @@ function ProjectNode({ proj, isEditing, onEdit, onSave, onUpdate, onDelete }: Pr
     }
     return (
         <motion.div
+            role="button"
+            tabIndex={0}
+            aria-label={`Edit ${proj.name || "project"}`}
             whileHover={{ y: -4, scale: 1.01 }}
             onClick={onEdit}
+            onKeyDown={(event) => editOnKeyDown(event, onEdit)}
             className="p-6 border border-border/40 rounded-[2rem] hover:border-indigo-500/40 hover:bg-indigo-500/[0.02] cursor-pointer transition-all flex items-start gap-6 group bg-card shadow-sm"
         >
             <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform"><Zap size={28} /></div>
@@ -941,16 +962,16 @@ function EducationNode({ edu, isEditing, onEdit, onSave, onUpdate, onDelete }: E
             <div className="p-8 border-2 border-orange-500/30 rounded-[2rem] space-y-6 bg-orange-50/10 backdrop-blur-sm">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Institution</label>
-                        <input value={edu.institution} onChange={(e) => onUpdate(edu.id, "institution", e.target.value)} placeholder="University Name" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
-                        <input value={edu.degree} onChange={(e) => onUpdate(edu.id, "degree", e.target.value)} placeholder="Degree Type" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <label htmlFor={`edu-${edu.id}-institution`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Institution</label>
+                        <input id={`edu-${edu.id}-institution`} aria-label="Institution" value={edu.institution} onChange={(e) => onUpdate(edu.id, "institution", e.target.value)} placeholder="University Name" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <input id={`edu-${edu.id}-degree`} aria-label="Degree" value={edu.degree} onChange={(e) => onUpdate(edu.id, "degree", e.target.value)} placeholder="Degree Type" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Academics</label>
-                        <input value={edu.field} onChange={(e) => onUpdate(edu.id, "field", e.target.value)} placeholder="Field of Study" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <label htmlFor={`edu-${edu.id}-field`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Academics</label>
+                        <input id={`edu-${edu.id}-field`} aria-label="Field of study" value={edu.field} onChange={(e) => onUpdate(edu.id, "field", e.target.value)} placeholder="Field of Study" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                         <div className="flex gap-2">
-                            <input value={edu.startDate} onChange={(e) => onUpdate(edu.id, "startDate", e.target.value)} placeholder="Start Year" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
-                            <input value={edu.endDate} onChange={(e) => onUpdate(edu.id, "endDate", e.target.value)} placeholder="Graduation" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                            <input aria-label="Start year" value={edu.startDate} onChange={(e) => onUpdate(edu.id, "startDate", e.target.value)} placeholder="Start Year" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                            <input aria-label="Graduation year" value={edu.endDate} onChange={(e) => onUpdate(edu.id, "endDate", e.target.value)} placeholder="Graduation" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                         </div>
                     </div>
                 </div>
@@ -963,8 +984,12 @@ function EducationNode({ edu, isEditing, onEdit, onSave, onUpdate, onDelete }: E
     }
     return (
         <motion.div
+            role="button"
+            tabIndex={0}
+            aria-label={`Edit ${edu.degree || "education"}`}
             whileHover={{ y: -4, scale: 1.01 }}
             onClick={onEdit}
+            onKeyDown={(event) => editOnKeyDown(event, onEdit)}
             className="p-6 border border-border/40 rounded-[2rem] hover:border-orange-500/40 hover:bg-orange-500/[0.02] cursor-pointer transition-all flex items-start gap-6 group bg-card shadow-sm"
         >
             <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform"><GraduationCap size={28} /></div>

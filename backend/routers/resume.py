@@ -37,7 +37,7 @@ async def parse_resume_stream(
         )
     except Exception as e:
         logger.error(f"Streaming parse error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to parse resume")
 
 @router.post("/parse-resume")
 async def parse_resume(
@@ -338,7 +338,7 @@ async def validate_bullet_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to validate bullet: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to validate bullet: {str(e)}"
+            detail="Failed to validate bullet"
         )
 
 @router.post("/spin-text")
@@ -384,7 +384,7 @@ async def spin_text_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to spin text: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to spin text: {str(e)}"
+            detail="Failed to spin text"
         )
 
 @router.post("/verify-resume-quality")
@@ -434,5 +434,5 @@ async def verify_resume_quality_endpoint(data: dict = Body(...)):
         logger.error(f"Failed to verify resume quality: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to verify resume quality: {str(e)}"
+            detail="Failed to verify resume quality"
         )
