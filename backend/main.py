@@ -21,8 +21,10 @@ import uvicorn
 from middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from env_loader import get_ai_status
 from security_utils import (
+    MAX_BULLET_CHARS,
     MAX_BULLETS,
     MAX_EXTRACTED_CHARS,
+    MAX_TEXT_CHARS,
     PUBLIC_SERVER_ERROR,
     ResumeUploadError,
     docs_enabled,
@@ -131,6 +133,56 @@ async def _load_resume_text(file: UploadFile) -> str:
     if len(text) > MAX_EXTRACTED_CHARS:
         return text[:MAX_EXTRACTED_CHARS]
     return text
+
+
+def _required_text(value: object, field: str, limit: int = MAX_TEXT_CHARS) -> str:
+    """Reject missing, non-text, and oversized free-text fields before scoring."""
+    if not isinstance(value, str) or not value.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field} is required",
+        )
+    if len(value) > limit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field} exceeds the {limit} character limit.",
+        )
+    return value
+
+
+def _bounded_bullets(raw: object) -> list:
+    """Normalize a bullet batch and reject values that are not short strings."""
+    if isinstance(raw, str):
+        bullets = [part.strip() for part in raw.split("\n") if part.strip()]
+    elif isinstance(raw, list):
+        bullets = raw
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="bullets must be a list of strings",
+        )
+    if not bullets:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="bullets array is required",
+        )
+    if len(bullets) > MAX_BULLETS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A maximum of {MAX_BULLETS} bullets can be analyzed at once.",
+        )
+    for bullet in bullets:
+        if not isinstance(bullet, str) or not bullet.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Each bullet must be a non-empty string.",
+            )
+        if len(bullet) > MAX_BULLET_CHARS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Each bullet must be at most {MAX_BULLET_CHARS} characters.",
+            )
+    return bullets
 
 # Cached service initialization for better performance
 @lru_cache()
@@ -451,13 +503,12 @@ async def assess_job_fit_endpoint(data: dict = Body(...)):
     - Recommended bullet distribution for resume
     """
     try:
-        job_description = data.get("job_description", "")
+        job_description = _required_text(data.get("job_description", ""), "job_description")
         resume_data = data.get("resume_data", {})
-        
-        if not job_description:
+        if resume_data is None or not isinstance(resume_data, dict):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="job_description is required"
+                detail="resume_data must be an object",
             )
         
         assessment = assess_job_fit(job_description, resume_data)
@@ -489,22 +540,7 @@ async def analyze_bullets(data: dict = Body(...)):
     Character limit: 240-260 characters per bullet.
     """
     try:
-        bullets = data.get("bullets", [])
-        
-        if not bullets:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="bullets array is required"
-            )
-        
-        if isinstance(bullets, str):
-            bullets = [b.strip() for b in bullets.split("\n") if b.strip()]
-
-        if len(bullets) > MAX_BULLETS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A maximum of {MAX_BULLETS} bullets can be analyzed at once.",
-            )
+        bullets = _bounded_bullets(data.get("bullets", []))
         
         # Analyze each bullet
         analyses = []
@@ -552,13 +588,7 @@ async def detect_company_stage(data: dict = Body(...)):
     Returns: early_stage, growth_stage, or enterprise
     """
     try:
-        job_description = data.get("job_description", "")
-        
-        if not job_description:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="job_description is required"
-            )
+        job_description = _required_text(data.get("job_description", ""), "job_description")
         
         stage = BulletFramework.detect_company_stage(job_description)
         keywords = BulletFramework.get_spinning_keywords(stage)
@@ -591,22 +621,7 @@ async def analyze_complete_resume_endpoint(data: dict = Body(...)):
     Returns overall score and submission-readiness.
     """
     try:
-        bullets = data.get("bullets", [])
-        
-        if not bullets:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="bullets array is required"
-            )
-        
-        if isinstance(bullets, str):
-            bullets = [b.strip() for b in bullets.split("\n") if b.strip()]
-
-        if len(bullets) > MAX_BULLETS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A maximum of {MAX_BULLETS} bullets can be analyzed at once.",
-            )
+        bullets = _bounded_bullets(data.get("bullets", []))
         
         # Run complete analysis
         analysis = analyze_complete_resume(bullets)
@@ -719,14 +734,8 @@ async def verify_cover_letter(data: dict = Body(...)):
     - Proper format (salutation/closing)
     """
     try:
-        cover_letter = data.get("cover_letter", "")
+        cover_letter = _required_text(data.get("cover_letter", ""), "cover_letter")
         job_data = data.get("job_data")
-        
-        if not cover_letter:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="cover_letter is required"
-            )
         
         report = CoverLetterVerifier.verify(cover_letter, job_data)
         
@@ -791,15 +800,9 @@ async def verify_outreach(data: dict = Body(...)):
     Validates message length, personalization, and call-to-action.
     """
     try:
-        message = data.get("message", "")
+        message = _required_text(data.get("message", ""), "message")
         message_type = data.get("type", "linkedin")
         job_data = data.get("job_data")
-        
-        if not message:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="message is required"
-            )
         
         report = OutreachVerifier.verify(message, message_type, job_data)
         
@@ -829,14 +832,19 @@ async def orchestrate_application(data: dict = Body(...)):
     Runs JD assessment, bullet selection, CL generation, and outreach strategy.
     """
     try:
-        job_description = data.get("job_description")
+        job_description = _required_text(data.get("job_description"), "job_description")
         resume_data = data.get("resume_data")
         bullet_library = data.get("bullet_library", [])
         
-        if not job_description or not resume_data:
+        if not isinstance(resume_data, dict) or not resume_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="job_description and resume_data are required"
+            )
+        if not isinstance(bullet_library, list) or len(bullet_library) > MAX_BULLETS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"bullet_library must be a list of at most {MAX_BULLETS} items",
             )
         
         results = await ApplicationOrchestrator.run_full_pipeline(
@@ -844,6 +852,8 @@ async def orchestrate_application(data: dict = Body(...)):
         )
         
         return results
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to orchestrate application: {str(e)}", exc_info=True)
         raise HTTPException(

@@ -137,3 +137,36 @@ class TestJDAssessor:
         assert assessment.spinning_recommendation
         assert any(keyword in assessment.spinning_recommendation.lower() 
                   for keyword in ["startup", "agile", "mvp", "early"])
+
+    def test_keywords_do_not_match_inside_longer_words(self):
+        """Java is not JavaScript, and ship is not hidden inside relationship."""
+        jd = "JavaScript engineers maintain customer relationships."
+        resume = {
+            "skills": ["Java"],
+            "experience": [{"role": "Engineer", "description": "Built Java services"}],
+        }
+        assessment = JDAssessor.assess(jd, resume)
+        technical = next(m for m in assessment.competency_matches if m.name == "technical_skills")
+        execution = next(m for m in assessment.competency_matches if m.name == "execution")
+        mentioned = [kw.lower() for kw in technical.matched_keywords + technical.missing_keywords]
+        assert "javascript" in mentioned
+        assert "java" not in mentioned
+        assert "ship" not in [kw.lower() for kw in execution.matched_keywords + execution.missing_keywords]
+
+    def test_fit_score_is_normalized_to_mentioned_competencies(self):
+        assessment = JDAssessor.assess(
+            "Python developer",
+            {"skills": ["Python"], "experience": []},
+        )
+        assert assessment.fit_score >= 80
+        assert assessment.fit_level == FitLevel.EXCELLENT
+
+    def test_decision_archives_weak_fit_even_when_interest_is_high(self):
+        assert JDAssessor._determine_decision(40, 9) == "ARCHIVE (Low Priority)"
+        assert JDAssessor._determine_decision(90, 5) == "ARCHIVE (Low Priority)"
+        assert JDAssessor._determine_decision(80, 7) == "PRESENT TO USER (Medium Priority)"
+        assert JDAssessor._determine_decision(90, 8) == "PROCEED (High Priority)"
+
+    def test_interest_starts_below_the_present_threshold(self):
+        assert JDAssessor._calculate_interest_level("a quiet office role", {}) == 5
+        assert JDAssessor._calculate_interest_level("remote leadership role", {}) == 7

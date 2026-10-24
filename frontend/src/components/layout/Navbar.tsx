@@ -31,6 +31,15 @@ export function Navbar() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileMenuOpen]);
+
   // One update per frame, and a passive listener so scrolling is not blocked.
   useEffect(() => {
     let frame = 0;
