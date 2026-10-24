@@ -4,7 +4,7 @@
 
 ![CareerAgentPro](https://img.shields.io/badge/CareerAgentPro-v2.0.0-blue?style=for-the-badge)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)](https://www.python.org/)
@@ -109,7 +109,7 @@ Framed captures of the live app (current UI).
 ### Frontend
 
 <p align="left">
-  <img src="https://img.shields.io/badge/Next.js-16.1-black?style=flat-square&logo=next.js" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/Next.js-16.4-black?style=flat-square&logo=next.js" alt="Next.js"/>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React"/>
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind"/>
@@ -421,6 +421,16 @@ The `/langchain/full-pipeline` endpoint demonstrates **chain composition**:
 
 Each chain uses `JsonOutputParser` with Pydantic schemas for reliable structured output.
 
+### Assessment, tracking, and autofill behavior
+
+- **Fit score** is the weighted average of the competency areas the job description actually mentions. A role that only asks for Python can still score 100 when that skill is present. Keywords match whole terms, so Java does not count as JavaScript.
+- **Application decision**: proceed when fit is at least 85 and interest is at least 8; present the role when fit is at least 75 and interest is at least 6; otherwise archive it. A high-interest keyword cannot rescue a weak fit.
+- **Saved jobs** keep their full analysis on the dashboard. Changing an application status or removing a job does not drop the description, skills, or match score, and a saved status is still there after reload.
+- **Job URL fetch** follows up to three redirects, and every hop must stay on an allowlisted host that resolves to a public address.
+- **Autofill** leaves work authorization, location, and demographic answers blank unless you supplied them. The API does not default those fields to a city, "Yes", or a demographic category.
+- **Free-text inputs** such as job descriptions are capped (20,000 characters). Bullet batches are capped at 100 items, and request bodies over 12MB are rejected.
+- **Tokens** are signed with PyJWT. `python-jose` is not installed; it is unmaintained and has known token-parsing vulnerabilities. Frontend dependencies are updated to the patched Next.js 16.4.3, Zod 4.6.7, and Vitest 5.0.5 releases.
+
 ---
 
 ## 🎨 Design System
@@ -549,6 +559,9 @@ npm run lint
 
 # Type check
 npm run type-check
+
+# Unit tests
+npm test
 
 # Build test
 npm run build

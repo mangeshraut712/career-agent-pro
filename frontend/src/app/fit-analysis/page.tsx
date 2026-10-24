@@ -38,13 +38,33 @@ interface AssessmentResult {
 
 
 
+type FitLevelName = "excellent" | "strong" | "moderate" | "weak";
+
+const FALLBACK_FIT_THEME = {
+    color: "text-muted-foreground",
+    bg: "bg-secondary",
+    border: "border-border",
+    gradient: "from-secondary to-muted",
+};
+
+function isFitLevel(level: string): level is FitLevelName {
+    return level === "excellent" || level === "strong" || level === "moderate" || level === "weak";
+}
+
 const getFitTheme = (level: string) => {
-    switch (level.toLowerCase()) {
+    const normalized = level.toLowerCase();
+    if (!isFitLevel(normalized)) {
+        return FALLBACK_FIT_THEME;
+    }
+    switch (normalized) {
         case "excellent": return { color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", gradient: "from-emerald-500 to-teal-400" };
         case "strong": return { color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", gradient: "from-blue-500 to-indigo-400" };
         case "moderate": return { color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", gradient: "from-amber-500 to-orange-400" };
         case "weak": return { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20", gradient: "from-rose-500 to-pink-400" };
-        default: return { color: "text-muted-foreground", bg: "bg-secondary", border: "border-border", gradient: "from-secondary to-muted" };
+        default: {
+            const unhandled: never = normalized;
+            return unhandled;
+        }
     }
 };
 
@@ -53,6 +73,7 @@ export default function FitAnalysisPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const { currentJob, profile } = useAppData();
     const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
+    const [analysisError, setAnalysisError] = useState<string | null>(null);
 
     const analyzeJobFit = async () => {
         if (!currentJob) {
@@ -62,6 +83,7 @@ export default function FitAnalysisPage() {
 
         setIsAnalyzing(true);
         setAssessment(null);
+        setAnalysisError(null);
 
         try {
             const response = await axios.post(`${API_URL}/assess-job-fit`, {
@@ -76,36 +98,11 @@ export default function FitAnalysisPage() {
             });
 
             setAssessment(response.data);
-            toast("Analysis Engines Online!", "success");
+            toast("Analysis complete", "success");
         } catch (error) {
             console.error("Analysis error:", error);
-            toast("Deep Analysis Error. Using fallback heuristics.", "info");
-
-            // Premium Mock Assessment
-            const mockAssessment: AssessmentResult = {
-                fit_score: 78,
-                fit_level: "strong",
-                strengths: ["Strategic Thinking", "Technical Leadership", "Industry Context"],
-                gaps: ["Advanced Automation", "Unit Testing"],
-                spinning_recommendation: "Focus on 'Growth Stage' language. Emphasize your ability to scale systems rather than just maintaining them.",
-                action_items: [
-                    "🚀 High Priority: Add 'Scale' and 'Growth' keywords to summary",
-                    "🔍 Gap: Explicitly mention experience with Testing Frameworks",
-                    "💡 Edge: Highlight your cross-functional leadership in Paragraph 2"
-                ],
-                resume_distribution: {
-                    leadership: 4,
-                    execution: 3,
-                    strategy: 3,
-                    technical: 3
-                },
-                competency_breakdown: [
-                    { area: "Strategy", score: 85, weight: 30, matched: ["planning", "roadmap"], missing: ["market research"] },
-                    { area: "Execution", score: 72, weight: 40, matched: ["delivery", "agile"], missing: ["automation"] },
-                    { area: "Leadership", score: 78, weight: 30, matched: ["mentoring", "hiring"], missing: ["budgeting"] }
-                ]
-            };
-            setAssessment(mockAssessment);
+            setAnalysisError("Fit analysis could not be completed. Check that the API is running, then try again. No score was invented.");
+            toast("Fit analysis failed. No score was generated.", "error");
         } finally {
             setIsAnalyzing(false);
         }
@@ -177,10 +174,10 @@ export default function FitAnalysisPage() {
                             {profile ? (
                                 <div className="space-y-4">
                                     <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center font-black text-xl text-purple-500 border border-purple-500/20">
-                                        {profile.name.charAt(0)}
+                                        {profile.name?.charAt(0) || "?"}
                                     </div>
                                     <div>
-                                        <p className="font-black text-lg leading-tight mb-1">{profile.name}</p>
+                                        <p className="font-black text-lg leading-tight mb-1">{profile.name || "Unnamed profile"}</p>
                                         <p className="text-sm font-medium text-muted-foreground truncate">{profile.skills?.length || 0} Loaded Competencies</p>
                                     </div>
                                 </div>
@@ -310,7 +307,7 @@ export default function FitAnalysisPage() {
                                                             initial={{ width: 0 }}
                                                             animate={{ width: `${comp.score}%` }}
                                                             transition={{ duration: 1, delay: i * 0.15, ease: "easeOut" }}
-                                                            className={`h-full rounded-full bg-gradient-to-r ${comp.score >= 75 ? "from-emerald-500 to-teal-400Shadow" :
+                                                            className={`h-full rounded-full bg-gradient-to-r ${comp.score >= 75 ? "from-emerald-500 to-teal-400" :
                                                                 comp.score >= 50 ? "from-amber-500 to-orange-400" :
                                                                     "from-rose-500 to-pink-400"
                                                                 }`}
@@ -341,7 +338,7 @@ export default function FitAnalysisPage() {
                                             </h3>
                                             <div className="space-y-4">
                                                 {assessment.strengths.map((str, i) => (
-                                                    <div key={i} className="flex gap-3 text-sm leading-snug font-medium p-3 bg-white/40 border border-emerald-500/10 rounded-2xl">
+                                                    <div key={i} className="flex gap-3 text-sm leading-snug font-medium p-3 bg-card text-foreground border border-emerald-500/10 rounded-2xl">
                                                         <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                                                         {str}
                                                     </div>
@@ -355,7 +352,7 @@ export default function FitAnalysisPage() {
                                             </h3>
                                             <div className="space-y-4">
                                                 {assessment.gaps.map((gap, i) => (
-                                                    <div key={i} className="flex gap-3 text-sm leading-snug font-medium p-3 bg-white/40 border border-rose-500/10 rounded-2xl">
+                                                    <div key={i} className="flex gap-3 text-sm leading-snug font-medium p-3 bg-card text-foreground border border-rose-500/10 rounded-2xl">
                                                         <AlertTriangle size={16} className="text-rose-500 shrink-0" />
                                                         {gap}
                                                     </div>
@@ -405,7 +402,7 @@ export default function FitAnalysisPage() {
                                         </h3>
                                         <div className="grid grid-cols-2 gap-4">
                                             {Object.entries(assessment.resume_distribution).map(([area, count]) => (
-                                                <div key={area} className="p-4 bg-white/80 border border-border/40 rounded-2xl text-center shadow-sm">
+                                                <div key={area} className="p-4 bg-card text-foreground border border-border/40 rounded-2xl text-center shadow-sm">
                                                     <div className="text-2xl font-black text-primary mb-1">{count}</div>
                                                     <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 truncate">{area.replace("_", " ")}</div>
                                                 </div>
@@ -418,8 +415,14 @@ export default function FitAnalysisPage() {
                     )}
                 </AnimatePresence>
 
+                {analysisError && !assessment && !isAnalyzing && (
+                    <div role="alert" className="mx-auto max-w-2xl rounded-3xl border border-rose-500/30 bg-rose-500/10 p-6 text-center text-sm font-medium text-foreground">
+                        {analysisError}
+                    </div>
+                )}
+
                 {/* Initial State / Empty Tracker */}
-                {!assessment && !isAnalyzing && (
+                {!assessment && !isAnalyzing && !analysisError && (
                     <motion.div {...FADE_IN} className="flex flex-col items-center justify-center py-20 opacity-40">
                         <div className="w-24 h-24 rounded-[2rem] border-2 border-dashed border-border/60 flex items-center justify-center mb-6">
                             <BarChart3 size={40} />

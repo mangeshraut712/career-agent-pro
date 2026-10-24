@@ -50,12 +50,12 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.563.0",
-    "next": "^16.3.8",
+    "next": "^16.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.0",
     "tailwind-merge": "^3.4.0",
-    "zod": "^4.3.6",
+    "zod": "^4.6.7",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
@@ -73,7 +73,7 @@
     "prettier": "^3.4.2",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=18.0.0",

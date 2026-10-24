@@ -251,27 +251,32 @@ export default function AnalyzeJobPage() {
                                             <motion.div
                                                 key={job.id}
                                                 whileHover={{ x: 4, y: -2 }}
-                                                onClick={() => { setCurrentJob(job); }}
-                                                className={`group p-4 rounded-2xl cursor-pointer transition-all border ${currentJob?.id === job.id
+                                                className={`group flex items-center gap-2 p-4 rounded-2xl transition-all border ${currentJob?.id === job.id
                                                     ? "bg-primary/[0.03] border-primary/20 ring-1 ring-primary/10"
                                                     : "bg-secondary/40 border-border/20 hover:border-primary/20"
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setCurrentJob(job); }}
+                                                    className="flex flex-1 items-center gap-3 min-w-0 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                >
                                                     <div className="w-10 h-10 rounded-xl bg-background border border-border/50 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-110 transition-transform">
-                                                        {job.company.charAt(0)}
+                                                        {(job.company || "?").charAt(0)}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="font-bold text-sm truncate leading-tight group-hover:text-primary transition-colors">{job.title}</h4>
                                                         <p className="text-xs text-muted-foreground truncate">{job.company}</p>
                                                     </div>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); deleteJob(job.id); }}
-                                                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-rose-500/10 hover:text-rose-500 transition-all"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Remove ${job.title || "saved job"}`}
+                                                    onClick={() => deleteJob(job.id)}
+                                                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                                                >
+                                                    <Trash2 size={14} aria-hidden="true" />
+                                                </button>
                                             </motion.div>
                                         ))
                                     ) : (

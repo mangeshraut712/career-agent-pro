@@ -5,9 +5,11 @@ import logging
 from typing import Callable
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from starlette.datastructures import MutableHeaders
+from starlette.datastructures import Headers, MutableHeaders
 from collections import defaultdict
 from datetime import datetime, timedelta
+
+from security_utils import body_size_status
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +83,21 @@ class RateLimitMiddleware:
 
         path = scope.get("path", "")
         method = scope.get("method", "GET")
+        headers = Headers(scope=scope)
+        size_status = body_size_status(headers.get("content-length"))
+        if size_status is not None:
+            message = (
+                "Request body is too large."
+                if size_status == 413
+                else "Content-Length is invalid."
+            )
+            response = JSONResponse(
+                status_code=size_status,
+                content={"error": message},
+            )
+            await response(scope, receive, send)
+            return
+
         if method == "OPTIONS" or path in {"/", "/health"}:
             await self.app(scope, receive, send)
             return

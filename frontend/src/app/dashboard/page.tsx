@@ -12,16 +12,16 @@ import { AppleCard } from "@/components/ui/AppleCard";
 import { AppleButton } from "@/components/ui/AppleButton";
 import { useToast } from "@/components/ui/Toast";
 import { secureGet, secureSet } from "@/lib/secureStorage";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { JobTracker } from "@/components/dashboard/JobTracker";
-
-interface TrackedJob {
-    id: string;
-    title: string;
-    company: string;
-    url: string;
-    status: "analyzing" | "resume_updated" | "applied" | "interviewing" | "offer" | "rejected";
-    createdAt: string;
-}
+import {
+    JobStatus,
+    removeStoredJob,
+    StoredAnalyzedJob,
+    toTrackedJob,
+    updateStoredJobStatus,
+    withStableIds,
+} from "@/lib/trackedJobs";
 
 
 
@@ -38,23 +38,28 @@ const STATUS_CONFIG = {
 
 export default function DashboardPage() {
     const { toast } = useToast();
-    const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
+    const [storedJobs, setStoredJobs] = useState<StoredAnalyzedJob[]>([]);
     const [profileComplete, setProfileComplete] = useState(0);
-    const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
+    const [greeting, setGreeting] = useState("Welcome");
+    const trackedJobs = storedJobs.map((job, index) => toTrackedJob(job, index));
+
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) setGreeting("Good morning");
+        else if (hour < 18) setGreeting("Good afternoon");
+        else setGreeting("Good evening");
+    }, []);
 
     useEffect(() => {
         const loadData = () => {
             try {
-                const jobs = secureGet<Array<{ id: string; title: string; company: string; url: string; analyzedAt: string }>>('analyzedJobs');
+                const jobs = secureGet<StoredAnalyzedJob[]>(STORAGE_KEYS.ANALYZED_JOBS);
                 if (jobs && Array.isArray(jobs)) {
-                    setTrackedJobs(jobs.map((job) => ({
-                        id: job.id || Math.random().toString(),
-                        title: job.title || "Unknown Job",
-                        company: job.company || "Unknown Company",
-                        url: job.url || "",
-                        status: "analyzing",
-                        createdAt: job.analyzedAt || new Date().toISOString(),
-                    })));
+                    const stable = withStableIds(jobs);
+                    setStoredJobs(stable);
+                    if (stable.some((job, index) => job !== jobs[index])) {
+                        secureSet(STORAGE_KEYS.ANALYZED_JOBS, stable);
+                    }
                 }
 
                 const data = secureGet<{ name?: string; email?: string; experience?: unknown[]; education?: unknown[]; skills?: unknown[] }>('profile');
@@ -74,12 +79,10 @@ export default function DashboardPage() {
         requestAnimationFrame(loadData);
     }, []);
 
-    const updateJobStatus = (jobId: string, status: TrackedJob["status"]) => {
-        const updated = trackedJobs.map(job =>
-            job.id === jobId ? { ...job, status } : job
-        );
-        setTrackedJobs(updated);
-        secureSet('analyzedJobs', updated);
+    const updateJobStatus = (jobId: string, status: JobStatus) => {
+        const updated = updateStoredJobStatus(storedJobs, jobId, status);
+        setStoredJobs(updated);
+        secureSet(STORAGE_KEYS.ANALYZED_JOBS, updated);
         const labels = {
             analyzing: "Analyzing",
             resume_updated: "Resume Ready",
@@ -92,9 +95,9 @@ export default function DashboardPage() {
     };
 
     const deleteTrackedJob = (jobId: string) => {
-        const updated = trackedJobs.filter(job => job.id !== jobId);
-        setTrackedJobs(updated);
-        secureSet('analyzedJobs', updated);
+        const updated = removeStoredJob(storedJobs, jobId);
+        setStoredJobs(updated);
+        secureSet(STORAGE_KEYS.ANALYZED_JOBS, updated);
         toast("Job removed from tracking", "info");
     };
 
@@ -318,8 +321,8 @@ export default function DashboardPage() {
                                     <h2 className="font-semibold text-lg">Recent Activity</h2>
                                 </div>
                                 <div className="space-y-3">
-                                    {trackedJobs.slice(0, 3).map((job, idx) => (
-                                        <div key={idx} className="flex items-center gap-3 text-sm p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                                    {trackedJobs.slice(0, 3).map((job) => (
+                                        <div key={job.id} className="flex items-center gap-3 text-sm p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
                                             title={`${STATUS_CONFIG[job.status] ? "" : "Unknown status"}`}>
                                             <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${STATUS_CONFIG[job.status]?.gradient || "from-gray-500 to-gray-400"} shadow-sm`} />
                                             <span className="text-muted-foreground truncate flex-1">

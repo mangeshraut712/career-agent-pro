@@ -651,6 +651,8 @@ export default function ProfilePage() {
                                                             </div>
                                                             <span className="text-sm font-bold tracking-tight text-rose-900 dark:text-rose-100">{cert}</span>
                                                             <button
+                                                                type="button"
+                                                                aria-label={`Remove ${cert}`}
                                                                 onClick={() => removeCertification(cert)}
                                                                 className="ml-2 p-1 rounded-full hover:bg-black/10 text-muted-foreground hover:text-rose-500 transition-colors"
                                                             >
@@ -675,7 +677,7 @@ export default function ProfilePage() {
                                                                     e.currentTarget.value = "";
                                                                 }
                                                             }}
-                                                            className="w-full pl-12 pr-6 py-4 bg-white dark:bg-slate-800 rounded-2xl text-base font-bold outline-none focus:ring-2 focus:ring-rose-500/20 border border-border/40 transition-all"
+                                                            className="w-full pl-12 pr-6 py-4 bg-white text-neutral-900 dark:bg-slate-800 dark:text-neutral-50 rounded-2xl text-base font-bold outline-none focus:ring-2 focus:ring-rose-500/20 border border-border/40 transition-all"
                                                         />
                                                     </div>
                                                 </div>
@@ -709,13 +711,15 @@ export default function ProfilePage() {
                                                             whileHover={{ y: -4, scale: 1.05 }}
                                                             className={`group flex items-center gap-2 px-5 py-2.5 rounded-2xl cursor-pointer transition-all border shadow-sm ${profile.preferredSkills.includes(skill)
                                                                 ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-transparent"
-                                                                : "bg-white dark:bg-slate-800 border-border/40 hover:border-emerald-500/50"
+                                                                : "bg-white text-neutral-900 dark:bg-slate-800 dark:text-neutral-50 border-border/40 hover:border-emerald-500/50"
                                                                 }`}
                                                             onClick={() => togglePreferred(skill)}
                                                         >
                                                             <Heart size={14} className={`transition-colors ${profile.preferredSkills.includes(skill) ? "fill-white text-white" : "text-emerald-500 group-hover:scale-110"}`} />
                                                             <span className="text-sm font-bold tracking-tight">{skill}</span>
                                                             <button
+                                                                type="button"
+                                                                aria-label={`Remove ${skill}`}
                                                                 onClick={(e) => { e.stopPropagation(); removeSkill(skill); }}
                                                                 className={`ml-2 p-1 rounded-full hover:bg-black/10 transition-colors ${profile.preferredSkills.includes(skill) ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-rose-500"}`}
                                                             >
@@ -737,7 +741,7 @@ export default function ProfilePage() {
                                                             onChange={(e) => setNewSkill(e.target.value)}
                                                             onKeyPress={(e) => e.key === "Enter" && addSkill()}
                                                             placeholder="Add new competency..."
-                                                            className="w-full pl-12 pr-6 py-4 bg-white dark:bg-slate-800 rounded-2xl text-base font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 border border-border/40 transition-all"
+                                                            className="w-full pl-12 pr-6 py-4 bg-white text-neutral-900 dark:bg-slate-800 dark:text-neutral-50 rounded-2xl text-base font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 border border-border/40 transition-all"
                                                         />
                                                     </div>
                                                     <AppleButton onClick={addSkill} className="px-8 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 font-black tracking-widest uppercase text-xs">
@@ -802,7 +806,7 @@ function InputField({ id, name, icon, label, value, onChange, placeholder, autoC
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
                     autoComplete={autoComplete}
-                    className="w-full pl-12 pr-5 py-4 bg-secondary/40 rounded-2xl text-base font-bold outline-none focus:ring-2 focus:ring-primary/10 border border-border/10 focus:border-primary/20 transition-all placeholder:text-muted-foreground/20"
+                    className="w-full pl-12 pr-5 py-4 bg-secondary/40 rounded-2xl text-base font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10 border border-border/10 focus:border-primary/20 transition-all placeholder:text-muted-foreground"
                 />
             </div>
         </div>
@@ -846,21 +850,21 @@ function ExperienceNode({ exp, isEditing, onEdit, onSave, onUpdate, onDelete }: 
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <label htmlFor={`exp-${exp.id}-role`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Context</label>
-                        <input id={`exp-${exp.id}-role`} aria-label="Role title" value={exp.role} onChange={(e) => onUpdate(exp.id, "role", e.target.value)} placeholder="Role Title" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
-                        <input id={`exp-${exp.id}-company`} aria-label="Organization" value={exp.company} onChange={(e) => onUpdate(exp.id, "company", e.target.value)} placeholder="Organization" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <input id={`exp-${exp.id}-role`} aria-label="Role title" value={exp.role} onChange={(e) => onUpdate(exp.id, "role", e.target.value)} placeholder="Role Title" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <input id={`exp-${exp.id}-company`} aria-label="Organization" value={exp.company} onChange={(e) => onUpdate(exp.id, "company", e.target.value)} placeholder="Organization" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                     </div>
                     <div className="space-y-4">
                         <label htmlFor={`exp-${exp.id}-location`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Logistics</label>
-                        <input id={`exp-${exp.id}-location`} aria-label="Location" value={exp.location} onChange={(e) => onUpdate(exp.id, "location", e.target.value)} placeholder="Location" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                        <input id={`exp-${exp.id}-location`} aria-label="Location" value={exp.location} onChange={(e) => onUpdate(exp.id, "location", e.target.value)} placeholder="Location" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                         <div className="flex gap-2">
-                            <input aria-label="Start date" value={exp.startDate} onChange={(e) => onUpdate(exp.id, "startDate", e.target.value)} placeholder="Start Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
-                            <input aria-label="End date" value={exp.endDate} onChange={(e) => onUpdate(exp.id, "endDate", e.target.value)} placeholder="End Date" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                            <input aria-label="Start date" value={exp.startDate} onChange={(e) => onUpdate(exp.id, "startDate", e.target.value)} placeholder="Start Date" className="flex-1 px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
+                            <input aria-label="End date" value={exp.endDate} onChange={(e) => onUpdate(exp.id, "endDate", e.target.value)} placeholder="End Date" className="flex-1 px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-purple-500/20" />
                         </div>
                     </div>
                 </div>
                 <div className="space-y-4">
                     <label htmlFor={`exp-${exp.id}-description`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Impact Narrative</label>
-                    <textarea id={`exp-${exp.id}-description`} aria-label="Impact narrative" value={exp.description} onChange={(e) => onUpdate(exp.id, "description", e.target.value)} placeholder="Describe your results..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-purple-500/20 resize-none" />
+                    <textarea id={`exp-${exp.id}-description`} aria-label="Impact narrative" value={exp.description} onChange={(e) => onUpdate(exp.id, "description", e.target.value)} placeholder="Describe your results..." rows={4} className="w-full px-5 py-4 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-purple-500/20 resize-none" />
                 </div>
                 <div className="flex justify-end items-center gap-6">
                     <button onClick={onDelete} className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors">Delete Node</button>
@@ -921,11 +925,11 @@ function ProjectNode({ proj, isEditing, onEdit, onSave, onUpdate, onDelete }: Pr
             <div className="p-8 border-2 border-indigo-500/30 rounded-[2rem] space-y-6 bg-indigo-50/10 backdrop-blur-sm">
                 <div className="space-y-4">
                     <label htmlFor={`proj-${proj.id}-name`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Project Name</label>
-                    <input id={`proj-${proj.id}-name`} aria-label="Project name" value={proj.name} onChange={(e) => onUpdate(proj.id, "name", e.target.value)} placeholder="e.g. AI Career Assistant" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                    <input id={`proj-${proj.id}-name`} aria-label="Project name" value={proj.name} onChange={(e) => onUpdate(proj.id, "name", e.target.value)} placeholder="e.g. AI Career Assistant" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20" />
                 </div>
                 <div className="space-y-4">
                     <label htmlFor={`proj-${proj.id}-description`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Strategic Impact</label>
-                    <textarea id={`proj-${proj.id}-description`} aria-label="Project impact" value={proj.description} onChange={(e) => onUpdate(proj.id, "description", e.target.value)} placeholder="Describe technologies used and outcome..." rows={4} className="w-full px-5 py-4 bg-white border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
+                    <textarea id={`proj-${proj.id}-description`} aria-label="Project impact" value={proj.description} onChange={(e) => onUpdate(proj.id, "description", e.target.value)} placeholder="Describe technologies used and outcome..." rows={4} className="w-full px-5 py-4 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
                 </div>
                 <div className="flex justify-end items-center gap-6">
                     <button onClick={onDelete} className="text-xs font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 transition-colors">Delete Project</button>
@@ -963,15 +967,15 @@ function EducationNode({ edu, isEditing, onEdit, onSave, onUpdate, onDelete }: E
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <label htmlFor={`edu-${edu.id}-institution`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Institution</label>
-                        <input id={`edu-${edu.id}-institution`} aria-label="Institution" value={edu.institution} onChange={(e) => onUpdate(edu.id, "institution", e.target.value)} placeholder="University Name" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
-                        <input id={`edu-${edu.id}-degree`} aria-label="Degree" value={edu.degree} onChange={(e) => onUpdate(edu.id, "degree", e.target.value)} placeholder="Degree Type" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <input id={`edu-${edu.id}-institution`} aria-label="Institution" value={edu.institution} onChange={(e) => onUpdate(edu.id, "institution", e.target.value)} placeholder="University Name" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <input id={`edu-${edu.id}-degree`} aria-label="Degree" value={edu.degree} onChange={(e) => onUpdate(edu.id, "degree", e.target.value)} placeholder="Degree Type" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                     </div>
                     <div className="space-y-4">
                         <label htmlFor={`edu-${edu.id}-field`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Academics</label>
-                        <input id={`edu-${edu.id}-field`} aria-label="Field of study" value={edu.field} onChange={(e) => onUpdate(edu.id, "field", e.target.value)} placeholder="Field of Study" className="w-full px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <input id={`edu-${edu.id}-field`} aria-label="Field of study" value={edu.field} onChange={(e) => onUpdate(edu.id, "field", e.target.value)} placeholder="Field of Study" className="w-full px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                         <div className="flex gap-2">
-                            <input aria-label="Start year" value={edu.startDate} onChange={(e) => onUpdate(edu.id, "startDate", e.target.value)} placeholder="Start Year" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
-                            <input aria-label="Graduation year" value={edu.endDate} onChange={(e) => onUpdate(edu.id, "endDate", e.target.value)} placeholder="Graduation" className="flex-1 px-5 py-3 bg-white border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                            <input aria-label="Start year" value={edu.startDate} onChange={(e) => onUpdate(edu.id, "startDate", e.target.value)} placeholder="Start Year" className="flex-1 px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
+                            <input aria-label="Graduation year" value={edu.endDate} onChange={(e) => onUpdate(edu.id, "endDate", e.target.value)} placeholder="Graduation" className="flex-1 px-5 py-3 bg-white text-neutral-900 placeholder:text-neutral-500 dark:bg-neutral-900 dark:text-neutral-50 dark:placeholder:text-neutral-400 border border-border rounded-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/20" />
                         </div>
                     </div>
                 </div>

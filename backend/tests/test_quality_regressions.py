@@ -7,12 +7,12 @@ from urllib.parse import urlparse
 import pytest
 from fastapi.testclient import TestClient
 from fpdf import FPDF
-from jose import jwt
+import jwt
 
 from auth_utils import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
 from main import app
 from middleware import rate_limiter
-from schemas import ResumeData
+from schemas import BulletSelectionRequest, ResumeData
 from security_utils import (
     ResumeUploadError,
     docs_enabled,
@@ -343,6 +343,53 @@ class TestJobUrlSafety:
         assert seen["url"].startswith("https://www.linkedin.com/")
 
     @pytest.mark.asyncio
+    async def test_redirect_hops_are_revalidated(self, monkeypatch):
+        requested = []
+        mode = {"blocked": True}
+
+        def fake_getaddrinfo(host, port, *args, **kwargs):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", 0))]
+
+        class FakeResponse:
+            def __init__(self, status_code, text, location=None):
+                self.status_code = status_code
+                self.text = text
+                self.headers = {"location": location} if location else {}
+
+        class FakeClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return None
+
+            async def get(self, url, headers=None):
+                requested.append(url)
+                if mode["blocked"]:
+                    return FakeResponse(302, "<html>redirect</html>", "https://evil.example/steal")
+                if url == "https://www.linkedin.com/jobs/view/9":
+                    return FakeResponse(302, "redirect", "https://jobs.lever.co/acme/1")
+                return FakeResponse(200, "<html><title>Engineer</title>Build APIs</html>")
+
+        monkeypatch.setattr("services.job_service.socket.getaddrinfo", fake_getaddrinfo)
+        monkeypatch.setattr("services.job_service.httpx.AsyncClient", FakeClient)
+        blocked = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
+        assert blocked is None
+        assert requested == ["https://www.linkedin.com/jobs/view/9"]
+
+        requested.clear()
+        mode["blocked"] = False
+        followed = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
+        assert followed and "Engineer" in followed
+        assert requested == [
+            "https://www.linkedin.com/jobs/view/9",
+            "https://jobs.lever.co/acme/1",
+        ]
+
+    @pytest.mark.asyncio
     async def test_extract_does_not_call_trafilatura_fetch(self, monkeypatch):
         def explode(url):
             raise AssertionError(f"trafilatura.fetch_url was called for {url}")
@@ -376,6 +423,32 @@ class TestAutofillAndAiErrors:
     def test_linkedin_mapping_is_not_google_fallback(self):
         mapping = AutofillService.get_field_mappings("linkedin")
         assert "emailAddress" in mapping["email"]
+
+    def test_omitted_demographics_are_not_invented(self):
+        resume = ResumeData(**SAMPLE_RESUME)
+        assert resume.gender is None
+        assert resume.race is None
+        assert resume.sexual_orientation is None
+        assert resume.is_authorized_us is None
+        assert resume.requires_sponsorship is None
+
+        script = AutofillService.generate_autofill_script(
+            {"name": "Ada Lovelace", "email": "ada@example.com"},
+            "google",
+        )
+        assert '"is_authorized_us": null' in script
+        assert '"requires_sponsorship": null' in script
+        assert '"gender": null' in script
+        assert "Philadelphia" not in script
+        assert "Heterosexual" not in script
+        assert '"is_authorized_us": "Yes"' not in script
+
+        explicit = AutofillService.generate_autofill_script(
+            {"name": "Ada Lovelace", "is_authorized_us": False, "requires_sponsorship": True},
+            "google",
+        )
+        assert '"is_authorized_us": "No"' in explicit
+        assert '"requires_sponsorship": "Yes"' in explicit
 
     @pytest.mark.asyncio
     async def test_completion_does_not_return_exception_text(self):
@@ -468,3 +541,58 @@ class TestApiErrorHygiene:
     def test_stream_message_length_is_capped(self):
         response = client.get("/api/stream/chat", params={"message": "a" * 4001})
         assert response.status_code == 422
+
+    def test_non_string_bullets_are_rejected(self):
+        response = client.post("/analyze-bullets", json={"bullets": [{"text": "not a string"}]})
+        assert response.status_code == 400
+        assert "string" in response.text
+
+    def test_job_description_length_is_capped(self):
+        response = client.post(
+            "/assess-job-fit",
+            json={"job_description": "python " * 5000, "resume_data": {}},
+        )
+        assert response.status_code == 400
+        assert "20000" in response.text
+
+    def test_bullet_selection_count_is_bounded(self):
+        response = client.post(
+            "/bullet-library/select-for-job",
+            json={"job_description": "Python engineer", "bullets": [{"text": "Built APIs"}], "count": 0},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_oversized_content_length_is_rejected(self):
+        from middleware import RateLimitMiddleware
+
+        async def app(scope, receive, send):
+            raise AssertionError("oversized request must not reach the app")
+
+        middleware = RateLimitMiddleware(app)
+        messages = []
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message):
+            messages.append(message)
+
+        await middleware(
+            {
+                "type": "http",
+                "path": "/enhance-resume",
+                "method": "POST",
+                "headers": [(b"content-length", b"99999999")],
+                "client": ("203.0.113.8", 1234),
+            },
+            receive,
+            send,
+        )
+        assert messages[0]["status"] == 413
+
+    def test_resume_selection_model_rejects_huge_batches(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            BulletSelectionRequest(job_description="role", bullets=[{"text": "Built APIs"}] * 101, count=13)
