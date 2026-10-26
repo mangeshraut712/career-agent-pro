@@ -57,16 +57,17 @@ class ResumeData(BaseModel):
     targeted_job_title: Optional[str] = None
     last_modified: Optional[str] = None
     
-    # Work Authorization & EEO (New)
-    is_authorized_us: bool = True
-    requires_sponsorship: bool = True
-    gender: Optional[str] = "Male"
-    disability: Optional[str] = "No"
-    is_lgbtq: Optional[str] = "No"
-    is_veteran: Optional[str] = "No"
-    race: Optional[str] = "Asian"
-    is_hispanic: Optional[str] = "No"
-    sexual_orientation: Optional[str] = "Heterosexual"
+    # Work authorization and EEO answers are omitted unless the user supplied them.
+    # Defaults such as "Male" or "authorized" would be submitted on applications.
+    is_authorized_us: Optional[bool] = None
+    requires_sponsorship: Optional[bool] = None
+    gender: Optional[str] = None
+    disability: Optional[str] = None
+    is_lgbtq: Optional[str] = None
+    is_veteran: Optional[str] = None
+    race: Optional[str] = None
+    is_hispanic: Optional[str] = None
+    sexual_orientation: Optional[str] = None
     
     # Dynamic Learning (New)
     custom_questions: Optional[dict] = Field(default_factory=dict) # Key: question text, Value: answer
@@ -97,15 +98,15 @@ class CommunicationRequest(BaseModel):
 
 class BulletItem(BaseModel):
     id: Optional[str] = None
-    text: str
+    text: str = Field(min_length=1, max_length=2_000)
     tags: List[str] = []
     competency: Optional[str] = None
 
 
 class BulletSelectionRequest(BaseModel):
-    job_description: str
-    bullets: List[BulletItem]
-    count: Optional[int] = 13
+    job_description: str = Field(min_length=1, max_length=20_000)
+    bullets: List[BulletItem] = Field(default_factory=list, max_length=100)
+    count: int = Field(default=13, ge=1, le=100)
 
 
 # ============================================

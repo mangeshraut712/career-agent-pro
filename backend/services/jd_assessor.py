@@ -3,13 +3,33 @@ JD Assessment Service - Job Description Analysis with Fit Scoring.
 Inspired by Apply-Pilot's JD Assessor agent.
 """
 
-import re
 import logging
+import re
+from functools import lru_cache
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=512)
+def _term_pattern(term: str) -> re.Pattern[str]:
+    """Whole-term match. A trailing plural s is allowed, so "team" matches "teams"."""
+    suffix = "" if term.endswith("s") else "s?"
+    return re.compile(rf"(?<!\w){re.escape(term)}{suffix}(?!\w)")
+
+
+def term_in_text(text: str, term: str) -> bool:
+    """True when `term` appears as its own word, not inside a longer token.
+
+    "java" does not match "javascript", and "ship" does not match "relationship".
+    """
+    haystack = text.lower() if text else ""
+    needle = term.strip().lower()
+    if not haystack or not needle:
+        return False
+    return _term_pattern(needle).search(haystack) is not None
 
 
 class FitLevel(Enum):
@@ -137,23 +157,23 @@ class JDAssessor:
         """
         jd_lower = job_description.lower()
         
-        prioritized_tier_1 = [s for s in cls.SKILLS_INTELLIGENCE["tier_1"] if s in jd_lower]
+        prioritized_tier_1 = [s for s in cls.SKILLS_INTELLIGENCE["tier_1"] if term_in_text(jd_lower, s)]
         
         # Determine swaps for Tier 2 tools
         swaps = {}
         for primary, alternatives in cls.SKILLS_INTELLIGENCE["tier_2"].items():
-            if primary in jd_lower:
+            if term_in_text(jd_lower, primary):
                 swaps[primary] = primary
             else:
                 for alt in alternatives:
-                    if alt in jd_lower:
+                    if term_in_text(jd_lower, alt):
                         swaps[primary] = alt
                         break
         
         # Detect domain-heavy JDs
         detected_domains = []
         for domain, keywords in cls.SKILLS_INTELLIGENCE["domains"].items():
-            if any(k in jd_lower for k in keywords):
+            if any(term_in_text(jd_lower, k) for k in keywords):
                 detected_domains.append(domain)
         
         return {
@@ -184,9 +204,11 @@ class JDAssessor:
         candidate_skills = cls._extract_candidate_skills(resume_data)
         candidate_experience = cls._extract_experience_text(resume_data)
         
-        # Assess each competency area
+        # Assess each competency area. Weights are renormalized across the
+        # areas the job actually mentions, so a one-keyword role can still score 100.
         competency_matches = []
-        weighted_score = 0
+        weighted_points = 0.0
+        weight_total = 0.0
         
         for area_name, area_config in competencies.items():
             match = cls._assess_competency(
@@ -194,10 +216,14 @@ class JDAssessor:
                 candidate_skills, candidate_experience
             )
             competency_matches.append(match)
-            weighted_score += match.match_score * match.weight
+            if match.weight > 0:
+                weighted_points += match.match_score * match.weight
+                weight_total += match.weight
         
-        # Calculate overall fit score
-        fit_score = min(100, int(weighted_score))
+        if weight_total <= 0:
+            fit_score = 0
+        else:
+            fit_score = min(100, int(round(weighted_points / weight_total)))
         fit_level = cls._determine_fit_level(fit_score)
         
         # Identify strengths and gaps
@@ -282,8 +308,8 @@ class JDAssessor:
         keywords = area_config.get("keywords", [])
         weight = area_config.get("weight", 0.2)
         
-        # Find JD mentions
-        jd_mentioned = [kw for kw in keywords if kw.lower() in jd_lower]
+        # Find JD mentions as whole terms. Substring checks treat "java" as "javascript".
+        jd_mentioned = [kw for kw in keywords if term_in_text(jd_lower, kw)]
         
         if not jd_mentioned:
             # Competency not required by JD
@@ -298,8 +324,8 @@ class JDAssessor:
         
         # Check candidate match
         candidate_text = " ".join(candidate_skills) + " " + candidate_experience
-        matched = [kw for kw in jd_mentioned if kw.lower() in candidate_text]
-        missing = [kw for kw in jd_mentioned if kw.lower() not in candidate_text]
+        matched = [kw for kw in jd_mentioned if term_in_text(candidate_text, kw)]
+        missing = [kw for kw in jd_mentioned if not term_in_text(candidate_text, kw)]
         
         match_score = (len(matched) / len(jd_mentioned)) * 100 if jd_mentioned else 100
         
@@ -338,7 +364,7 @@ class JDAssessor:
         
         for archetype, patterns in cls.ARCHETYPE_PATTERNS.items():
             for pattern in patterns:
-                if pattern in jd_lower:
+                if term_in_text(jd_lower, pattern):
                     scores[archetype] += 1
         
         top_archetype = max(scores, key=scores.get)
@@ -412,32 +438,31 @@ class JDAssessor:
         """
         Assess interest level (1-10) based on JD keywords and candidate preferences.
         """
-        interest = 7  # Base interest
-        
-        # Boost for preferred archetypes/keywords if we had them in resume_data
-        # For now, we simulate based on common high-interest signals
+        # No preference signals start below the "present" threshold so a weak
+        # match is archived instead of always looking medium-interest.
+        interest = 5
         high_interest_keywords = ["remote", "leadership", "0-to-1", "founding", "growth"]
         for kw in high_interest_keywords:
-            if kw in jd_lower:
+            if term_in_text(jd_lower, kw):
                 interest += 1
-                
-        # Cap at 10
+
         return min(10, interest)
 
     @classmethod
     def _determine_decision(cls, fit_score: int, interest_level: int) -> str:
         """
         Determine the strategic decision based on Fit Score and Interest Level.
-        HIGH PRIORITY: Fit 85+, Interest 8+ -> PROCEED
-        MEDIUM PRIORITY: Fit 75-85, Interest 6-7 -> PRESENT TO USER
-        LOW PRIORITY: Fit <75, Interest <6 -> ARCHIVE
+
+        PROCEED: fit 85+ and interest 8+.
+        PRESENT TO USER: fit 75+ and interest 6+, when it is not already a proceed.
+        ARCHIVE: weak fit or low interest. Interest alone cannot rescue a weak fit,
+        and the previous `or` made ARCHIVE unreachable because interest started at 7.
         """
         if fit_score >= 85 and interest_level >= 8:
             return "PROCEED (High Priority)"
-        elif fit_score >= 75 or interest_level >= 7:
+        if fit_score >= 75 and interest_level >= 6:
             return "PRESENT TO USER (Medium Priority)"
-        else:
-            return "ARCHIVE (Low Priority)"
+        return "ARCHIVE (Low Priority)"
 
 
 def assess_job_fit(job_description: str, resume_data: Dict[str, Any]) -> Dict[str, Any]:

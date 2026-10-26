@@ -11,9 +11,12 @@ import os
 from fastapi import UploadFile
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_REQUEST_BYTES = 12 * 1024 * 1024
 MAX_PDF_PAGES = 30
 MAX_EXTRACTED_CHARS = 500_000
 MAX_BULLETS = 100
+MAX_TEXT_CHARS = 20_000
+MAX_BULLET_CHARS = 2_000
 ALLOWED_RESUME_EXTENSIONS = frozenset({".pdf", ".docx", ".txt"})
 PUBLIC_SERVER_ERROR = "An unexpected error occurred."
 
@@ -95,6 +98,23 @@ async def read_limited_upload(
     if size == 0:
         raise ResumeUploadError("Uploaded file is empty.")
     return b"".join(chunks)
+
+
+def body_size_status(content_length: str | None, limit: int = MAX_REQUEST_BYTES) -> int | None:
+    """Return an HTTP status when Content-Length is malformed or over the cap.
+
+    Missing Content-Length is allowed so chunked downloads can still be checked
+    by the upload reader. A negative or non-integer length is rejected.
+    """
+    if content_length is None or not content_length.strip():
+        return None
+    try:
+        size = int(content_length)
+    except ValueError:
+        return 400
+    if size < 0 or size > limit:
+        return 413
+    return None
 
 
 def safe_download_name(name: str, extension: str) -> str:

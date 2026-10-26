@@ -1,5 +1,5 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Navbar } from "@/components/layout/Navbar";
 
@@ -43,5 +43,13 @@ describe("Navbar", () => {
         const menu = screen.getByRole("button", { name: "Open menu" });
         expect(menu).toHaveAttribute("aria-expanded", "false");
         expect(menu).toHaveAttribute("aria-controls", "mobile-nav");
+    });
+
+    it("closes the mobile menu when Escape is pressed", () => {
+        render(<Navbar />);
+        fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+        expect(screen.getByRole("button", { name: "Close menu" })).toHaveAttribute("aria-expanded", "true");
+        fireEvent.keyDown(window, { key: "Escape" });
+        expect(screen.getByRole("button", { name: "Open menu" })).toHaveAttribute("aria-expanded", "false");
     });
 });

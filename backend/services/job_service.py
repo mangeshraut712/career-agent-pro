@@ -5,7 +5,7 @@ import re
 import socket
 from html.parser import HTMLParser
 from typing import List, Optional
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import httpx
 import trafilatura
@@ -15,6 +15,10 @@ from schemas import JobDescription
 from services.ai_service import AIService
 
 # Allowed domains for job extraction (SSRF protection)
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_MAX_REDIRECTS = 3
+
+
 ALLOWED_DOMAINS = frozenset([
     # Major job boards
     "linkedin.com", "www.linkedin.com", "indeed.com", "www.indeed.com",
@@ -85,18 +89,19 @@ class JobService:
                 return False
         return True
     
-    async def _fetch_with_httpx(self, url: str, user_agent: Optional[str] = None) -> Optional[str]:
-        """Fetch URL content using httpx with SSRF protection.
-        
-        This method performs inline URL validation for CodeQL compatibility.
+    def _sanitize_fetch_url(self, url: str) -> Optional[str]:
+        """Return an https URL that is allowlisted and resolves to public IPs.
+
+        http is upgraded to https. Redirect targets are passed through the same
+        checks so an allowed host cannot pivot to an internal address.
         """
-        # Inline URL validation for CodeQL dataflow analysis
         try:
             parsed = urlparse(url)
         except Exception:
             return None
-            
-        # Only allow https scheme
+
+        if parsed.scheme == "http":
+            parsed = parsed._replace(scheme="https")
         if parsed.scheme != "https":
             return None
         if parsed.username or parsed.password:
@@ -125,38 +130,66 @@ class JobService:
             hostname == "0.0.0.0" or
             hostname == "::1"):
             return None
-        
-        # Check domain allowlist inline
+
         is_allowed = False
         for allowed in ALLOWED_DOMAINS:
             if hostname == allowed or hostname.endswith("." + allowed):
                 is_allowed = True
                 break
-        
         if not is_allowed:
             return None
 
         if not self._resolves_to_public_ips(hostname):
             return None
-        
+
         # Reconstruct URL from validated components. Do not reuse the raw input.
         safe_url = f"https://{hostname}{parsed.path}"
         if parsed.query:
             safe_url += f"?{parsed.query}"
-        
+        return safe_url
+
+    async def _fetch_with_httpx(self, url: str, user_agent: Optional[str] = None) -> Optional[str]:
+        """Fetch URL content using httpx with SSRF protection.
+
+        Redirects are followed manually, and every hop is revalidated. Automatic
+        redirect following would let an allowlisted host point at a private address.
+        """
+        safe_url = self._sanitize_fetch_url(url)
+        if not safe_url:
+            return None
+
         headers = {
             "User-Agent": user_agent or "Mozilla/5.0 (compatible; JobHelper/1.0)",
             "Accept": "text/html",
         }
         try:
             async with httpx.AsyncClient(follow_redirects=False, timeout=30.0) as client:
-                response = await client.get(safe_url, headers=headers)
-                response.raise_for_status()
-                return response.text
+                current = safe_url
+                for hop in range(_MAX_REDIRECTS + 1):
+                    response = await client.get(current, headers=headers)
+                    status = getattr(response, "status_code", 200)
+                    if status in _REDIRECT_STATUSES:
+                        if hop == _MAX_REDIRECTS:
+                            return None
+                        location = ""
+                        response_headers = getattr(response, "headers", None)
+                        if response_headers is not None:
+                            location = response_headers.get("location") or ""
+                        if not location:
+                            return None
+                        nxt = self._sanitize_fetch_url(urljoin(current, location))
+                        if not nxt:
+                            return None
+                        current = nxt
+                        continue
+                    if status >= 400:
+                        return None
+                    return response.text
         except httpx.HTTPError:
             return None
         except Exception:
             return None
+        return None
     
     def _extract_text_from_html(self, html_content: str) -> str:
         """Extract readable text from HTML using trafilatura or meta tags"""

@@ -21,6 +21,19 @@ def _as_text(value, limit: int = 500):
     return None
 
 
+def _optional_yes_no(value):
+    """Map an explicit boolean answer. Missing values stay blank."""
+    if isinstance(value, bool):
+        return "Yes" if value else "No"
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"yes", "true", "y"}:
+            return "Yes"
+        if lowered in {"no", "false", "n"}:
+            return "No"
+    return None
+
+
 class AutofillService:
     @staticmethod
     def get_field_mappings(platform: str):
@@ -98,9 +111,9 @@ class AutofillService:
             "phone": _as_text(resume_data.get("phone")),
             "linkedin": _as_text(resume_data.get("linkedin")),
             "website": _as_text(resume_data.get("website")),
-            "location": _as_text(resume_data.get("location")) or "Philadelphia, PA",
-            "is_authorized_us": "Yes" if resume_data.get("is_authorized_us") else "No",
-            "requires_sponsorship": "Yes" if resume_data.get("requires_sponsorship") else "No",
+            "location": _as_text(resume_data.get("location")),
+            "is_authorized_us": _optional_yes_no(resume_data.get("is_authorized_us")),
+            "requires_sponsorship": _optional_yes_no(resume_data.get("requires_sponsorship")),
             "gender": _as_text(resume_data.get("gender")),
             "race": _as_text(resume_data.get("race")),
             "disability": _as_text(resume_data.get("disability")),
