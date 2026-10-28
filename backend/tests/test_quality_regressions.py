@@ -1,5 +1,6 @@
 """Regression tests for the quality, security, and correctness fixes."""
 import io
+import logging
 import socket
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -326,6 +327,26 @@ class TestJobUrlSafety:
         assert self.service._sanitize_fetch_url(url) is None
         assert attempted == []
         assert result.title == "Unsupported Job Board"
+
+    def test_credentialed_url_is_never_fetched_or_exposed(self, monkeypatch, caplog):
+        marker = "LEAK_MARKER_8f8d7c"
+        attempted = []
+
+        async def should_not_fetch(url, user_agent=None):
+            attempted.append(url)
+            raise AssertionError("credentialed URL must not be fetched")
+
+        monkeypatch.setattr("main.job_service._fetch_with_httpx", should_not_fetch)
+        with caplog.at_level(logging.INFO, logger="main"):
+            response = client.post(
+                "/extract-job",
+                json={"url": f"https://user:{marker}@jobs.lever.co/acme/job"},
+            )
+
+        assert response.status_code == 200
+        assert marker not in response.text
+        assert marker not in caplog.text
+        assert attempted == []
 
     @pytest.mark.asyncio
     async def test_private_resolution_is_not_fetched(self, monkeypatch):

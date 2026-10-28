@@ -315,7 +315,7 @@ async def extract_job(url_data: dict = Body(...)):
             )
         
         result = await job_service.extract_from_url(url)
-        logger.info(f"Successfully extracted job from URL: {url}")
+        logger.info("Successfully extracted job from URL")
         return result
     except HTTPException:
         raise

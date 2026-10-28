@@ -125,6 +125,64 @@ describe("exportResumePdf", () => {
     expect(createObjectURL).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["PDF", exportResumePdf, "application/pdf-malformed"],
+    [
+      "DOCX",
+      exportResumeDocx,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document-malformed",
+    ],
+  ])(
+    "rejects a spoofed %s content type",
+    async (_format, exportResume, contentType) => {
+      post.mockResolvedValue({
+        data: new Blob(["not the requested format"]),
+        headers: { "content-type": contentType },
+      });
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, "click")
+        .mockImplementation(() => undefined);
+
+      try {
+        await expect(
+          exportResume("https://api.example", profile),
+        ).rejects.toThrow("export returned an unexpected response");
+        expect(createObjectURL).not.toHaveBeenCalled();
+      } finally {
+        click.mockRestore();
+      }
+    },
+  );
+
+  it.each([
+    ["PDF", exportResumePdf, "application/pdf; charset=binary"],
+    [
+      "DOCX",
+      exportResumeDocx,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document; charset=binary",
+    ],
+  ])(
+    "accepts a parameterized %s content type",
+    async (_format, exportResume, contentType) => {
+      post.mockResolvedValue({
+        data: new Blob(["valid export"]),
+        headers: { "content-type": contentType },
+      });
+      const click = vi
+        .spyOn(HTMLAnchorElement.prototype, "click")
+        .mockImplementation(() => undefined);
+
+      try {
+        await expect(
+          exportResume("https://api.example", profile),
+        ).resolves.toBeUndefined();
+        expect(createObjectURL).toHaveBeenCalledOnce();
+      } finally {
+        click.mockRestore();
+      }
+    },
+  );
+
   it("rejects an incomplete profile before making a request", async () => {
     await expect(
       exportResumePdf("https://api.example", { ...profile, name: " " }),

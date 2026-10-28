@@ -372,7 +372,8 @@ class JobService:
                 description="This job board is not currently supported. Please copy and paste the job description manually, or use a supported job board (LinkedIn, Indeed, Glassdoor, Lever, Greenhouse, etc.).",
                 requirements=["Manual entry required"],
                 responsibilities=["Manual entry required"],
-                url=url
+                # Do not reflect rejected input. It may contain URL credentials.
+                url=None,
             )
         
         # SECURITY: At this point, url has been validated against the allowlist.

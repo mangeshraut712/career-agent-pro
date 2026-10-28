@@ -174,13 +174,14 @@ async function exportResume(
       headers: { Accept: exportConfig.contentType },
     },
   );
-  const contentType = String(
-    response.headers["content-type"] || "",
-  ).toLowerCase();
+  const contentType = String(response.headers["content-type"] || "")
+    .split(";", 1)[0]
+    .trim()
+    .toLowerCase();
   if (
     !(response.data instanceof Blob) ||
     response.data.size === 0 ||
-    !contentType.startsWith(exportConfig.contentType)
+    contentType !== exportConfig.contentType
   ) {
     throw new Error(
       `${exportConfig.label} export returned an unexpected response`,
