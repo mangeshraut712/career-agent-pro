@@ -266,6 +266,18 @@ class TestExportSafety:
         assert removed
         assert all(not __import__("os").path.exists(path) for path in removed)
 
+    def test_pdf_rejects_an_oversized_export_before_generation(self, monkeypatch):
+        def should_not_export(*args, **kwargs):
+            raise AssertionError("oversized export input must not be rendered")
+
+        monkeypatch.setattr("main.export_service.to_pdf", should_not_export)
+        response = client.post(
+            "/export/pdf",
+            json={**SAMPLE_RESUME, "summary": "x" * 10_001},
+        )
+
+        assert response.status_code == 422
+
 
 class TestJobUrlSafety:
     def setup_method(self):
@@ -280,6 +292,40 @@ class TestJobUrlSafety:
         assert not self.service._is_allowed_url("https://evil.example/jobs")
         assert not self.service._is_allowed_url("https://notlinkedin.com/jobs")
         assert not self.service._is_allowed_url("https://linkedin.com.evil.example/jobs")
+
+    @pytest.mark.asyncio
+    async def test_out_of_range_port_is_rejected_before_fetch(self, monkeypatch):
+        attempted = []
+        url = "https://jobs.lever.co:99999/acme/job"
+
+        async def should_not_fetch(url, user_agent=None):
+            attempted.append(url)
+            raise AssertionError("invalid URL must not be fetched")
+
+        monkeypatch.setattr(self.service, "_fetch_with_httpx", should_not_fetch)
+        result = await self.service.extract_from_url(url)
+
+        assert not self.service._is_allowed_url(url)
+        assert self.service._sanitize_fetch_url(url) is None
+        assert attempted == []
+        assert result.title == "Unsupported Job Board"
+
+    @pytest.mark.asyncio
+    async def test_malformed_url_is_rejected_before_fetch(self, monkeypatch):
+        attempted = []
+        url = "https://[::1"
+
+        async def should_not_fetch(url, user_agent=None):
+            attempted.append(url)
+            raise AssertionError("malformed URL must not be fetched")
+
+        monkeypatch.setattr(self.service, "_fetch_with_httpx", should_not_fetch)
+        result = await self.service.extract_from_url(url)
+
+        assert not self.service._is_allowed_url(url)
+        assert self.service._sanitize_fetch_url(url) is None
+        assert attempted == []
+        assert result.title == "Unsupported Job Board"
 
     @pytest.mark.asyncio
     async def test_private_resolution_is_not_fetched(self, monkeypatch):

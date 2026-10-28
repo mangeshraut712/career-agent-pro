@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated, List, Optional, Dict
 
 class JobDescription(BaseModel):
     # Basic Info
@@ -71,6 +71,42 @@ class ResumeData(BaseModel):
     
     # Dynamic Learning (New)
     custom_questions: Optional[dict] = Field(default_factory=dict) # Key: question text, Value: answer
+
+
+class ExportExperience(BaseModel):
+    """A bounded experience entry accepted by the document export endpoints."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: str = Field(default="", max_length=300)
+    company: str = Field(default="", max_length=300)
+    description: str = Field(default="", max_length=10_000)
+    duration: str = Field(default="", max_length=100)
+
+
+class ExportEducation(BaseModel):
+    """A bounded education entry accepted by the document export endpoints."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    institution: str = Field(default="", max_length=500)
+    degree: str = Field(default="", max_length=500)
+    graduation_year: Optional[str] = Field(default=None, max_length=32)
+
+
+class ResumeExportData(BaseModel):
+    """Minimal, size-bounded resume payload used only for local document exports."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=1, max_length=320)
+    phone: Optional[str] = Field(default=None, max_length=64)
+    linkedin: Optional[str] = Field(default=None, max_length=2_048)
+    summary: str = Field(max_length=10_000)
+    experience: List[ExportExperience] = Field(max_length=50)
+    education: List[ExportEducation] = Field(max_length=50)
+    skills: List[Annotated[str, Field(max_length=200)]] = Field(max_length=100)
 
 class EnhancementRequest(BaseModel):
     resume_data: ResumeData

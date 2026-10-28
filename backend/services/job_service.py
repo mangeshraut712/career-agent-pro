@@ -56,7 +56,11 @@ class JobService:
             return False
         if parsed.username or parsed.password:
             return False
-        if parsed.port not in (None, 80, 443):
+        try:
+            port = parsed.port
+        except ValueError:
+            return False
+        if port not in (None, 80, 443):
             return False
         hostname = (parsed.hostname or "").lower().rstrip(".")
         if not hostname:
@@ -106,7 +110,11 @@ class JobService:
             return None
         if parsed.username or parsed.password:
             return None
-        if parsed.port not in (None, 443):
+        try:
+            port = parsed.port
+        except ValueError:
+            return None
+        if port not in (None, 443):
             return None
 
         hostname = (parsed.hostname or "").lower().rstrip(".")
@@ -350,8 +358,11 @@ class JobService:
         Security: Only allowed domains can be fetched (SSRF protection).
         """
         # Security: Validate URL against allowlist
-        parsed_input = urlparse(url)
-        if parsed_input.scheme == "http" and parsed_input.netloc:
+        try:
+            parsed_input = urlparse(url)
+        except ValueError:
+            parsed_input = None
+        if parsed_input is not None and parsed_input.scheme == "http" and parsed_input.netloc:
             url = urlunparse(parsed_input._replace(scheme="https"))
 
         if not self._is_allowed_url(url):

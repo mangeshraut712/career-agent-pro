@@ -14,6 +14,7 @@ import { AppleButton } from "@/components/ui/AppleButton";
 import { useToast } from "@/components/ui/Toast";
 import axios from "axios";
 import API_URL from "@/lib/api";
+import { exportResumeDocx, exportResumePdf } from "@/lib/resumeExport";
 import Link from "next/link";
 
 import { useAppData } from "@/hooks/useAppData";
@@ -190,14 +191,28 @@ export default function ResumesPage() {
         toast("Profile synchronized with recommendations", "success");
     };
 
-    const exportPDF = async () => {
-        if (!profile) return;
+    const exportResume = async (format: "pdf" | "docx") => {
+        if (!profile) {
+            toast("Create a profile before exporting", "error");
+            return;
+        }
         setIsExporting(true);
         try {
-            await new Promise(r => setTimeout(r, 1500));
-            toast("PDF rendered and exported", "success");
-        } catch { toast("Export failed", "error"); } finally { setIsExporting(false); }
+            if (format === "pdf") {
+                await exportResumePdf(API_URL, profile);
+            } else {
+                await exportResumeDocx(API_URL, profile);
+            }
+            toast(`${format.toUpperCase()} downloaded`, "success");
+        } catch {
+            toast(`Could not export ${format.toUpperCase()}. Please try again.`, "error");
+        } finally {
+            setIsExporting(false);
+        }
     };
+
+    const exportPDF = () => exportResume("pdf");
+    const exportDOCX = () => exportResume("docx");
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/10">
@@ -421,9 +436,11 @@ export default function ResumesPage() {
                                     </AppleButton>
                                     <AppleButton
                                         className="w-full h-14 bg-white/10 hover:bg-white/20 border-white/10 text-white font-bold backdrop-blur-md justify-start gap-4 px-6"
+                                        onClick={exportDOCX}
+                                        disabled={isExporting}
                                     >
                                         <FileText size={20} className="text-blue-400" />
-                                        Export as DOCX
+                                        {isExporting ? "Preparing export..." : "Export as DOCX"}
                                     </AppleButton>
                                     <AppleButton
                                         variant="ghost"

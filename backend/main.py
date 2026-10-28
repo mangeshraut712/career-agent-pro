@@ -33,7 +33,7 @@ from security_utils import (
     safe_download_name,
     validate_resume_filename,
 )
-from schemas import EnhancementRequest, CoverLetterRequest, CommunicationRequest, ResumeData, BulletSelectionRequest, SixPointBullet
+from schemas import EnhancementRequest, CoverLetterRequest, CommunicationRequest, ResumeData, ResumeExportData, BulletSelectionRequest, SixPointBullet
 from services.ai_service import AIService
 from services.job_service import JobService
 from services.export_service import ExportService
@@ -385,7 +385,7 @@ async def generate_communication(request: CommunicationRequest):
         )
 
 @app.post("/export/docx")
-async def export_docx(resume: ResumeData):
+async def export_docx(resume: ResumeExportData):
     """Export resume as DOCX file."""
     output_path = ""
     try:
@@ -412,7 +412,7 @@ async def export_docx(resume: ResumeData):
         )
 
 @app.post("/export/pdf")
-async def export_pdf(resume: ResumeData):
+async def export_pdf(resume: ResumeExportData):
     """Export resume as PDF file."""
     output_path = ""
     try:

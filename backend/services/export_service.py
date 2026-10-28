@@ -2,10 +2,10 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from docx import Document
 from fpdf import FPDF
-from schemas import ResumeData
+from schemas import ResumeData, ResumeExportData
 from slugify import slugify
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,17 @@ def pdf_text(text: object, unicode_font: bool) -> str:
     return value.encode("latin-1", errors="replace").decode("latin-1")
 
 
+def _export_mapping(entry: object) -> dict | None:
+    """Return export entries as mappings for both legacy and bounded request models."""
+    if isinstance(entry, dict):
+        return entry
+    model_dump = getattr(entry, "model_dump", None)
+    if callable(model_dump):
+        value = model_dump()
+        return value if isinstance(value, dict) else None
+    return None
+
+
 class ExportService:
     """Service for exporting resumes to various formats."""
     
@@ -75,7 +86,7 @@ class ExportService:
             raise
     
     @staticmethod
-    def to_docx(resume: ResumeData, output_path: str) -> str:
+    def to_docx(resume: Union[ResumeData, ResumeExportData], output_path: str) -> str:
         """Export resume to DOCX format."""
         try:
             if not resume.name:
@@ -103,8 +114,9 @@ class ExportService:
             # Experience
             if resume.experience:
                 doc.add_heading('Experience', level=1)
-                for exp in resume.experience:
-                    if not isinstance(exp, dict):
+                for experience in resume.experience:
+                    exp = _export_mapping(experience)
+                    if exp is None:
                         continue
                     role = exp.get('role', 'N/A')
                     company = exp.get('company', 'N/A')
@@ -119,8 +131,9 @@ class ExportService:
             # Education
             if resume.education:
                 doc.add_heading('Education', level=1)
-                for edu in resume.education:
-                    if not isinstance(edu, dict):
+                for education in resume.education:
+                    edu = _export_mapping(education)
+                    if edu is None:
                         continue
                     institution = edu.get('institution', 'N/A')
                     doc.add_heading(institution, level=2)
@@ -148,7 +161,7 @@ class ExportService:
             raise
 
     @staticmethod
-    def to_pdf(resume: ResumeData, output_path: str) -> str:
+    def to_pdf(resume: Union[ResumeData, ResumeExportData], output_path: str) -> str:
         """Export resume to PDF format."""
         try:
             if not resume.name:
@@ -190,8 +203,9 @@ class ExportService:
             # Experience
             if resume.experience:
                 _line(bold, 12, "Experience", 10)
-                for exp in resume.experience:
-                    if not isinstance(exp, dict):
+                for experience in resume.experience:
+                    exp = _export_mapping(experience)
+                    if exp is None:
                         continue
                     role = exp.get('role', 'N/A')
                     company = exp.get('company', 'N/A')
@@ -206,8 +220,9 @@ class ExportService:
             # Education
             if resume.education:
                 _line(bold, 12, "Education", 10)
-                for edu in resume.education:
-                    if not isinstance(edu, dict):
+                for education in resume.education:
+                    edu = _export_mapping(education)
+                    if edu is None:
                         continue
                     institution = edu.get('institution', 'N/A')
                     degree = edu.get('degree', '')
