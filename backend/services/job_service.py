@@ -210,40 +210,43 @@ class JobService:
             "Accept": "text/html",
         }
         try:
-            async with httpx.AsyncClient(
-                follow_redirects=False,
-                timeout=30.0,
-                trust_env=False,
-                verify=True,
-            ) as client:
-                for hop in range(_MAX_REDIRECTS + 1):
-                    pinned_url, hostname = pinned_request
+            for hop in range(_MAX_REDIRECTS + 1):
+                pinned_url, hostname = pinned_request
+                # A numeric peer may serve more than one hostname. Do not reuse
+                # a connection whose TLS handshake was authenticated for a
+                # previous redirect host with the same resolved address.
+                async with httpx.AsyncClient(
+                    follow_redirects=False,
+                    timeout=30.0,
+                    trust_env=False,
+                    verify=True,
+                ) as client:
                     response = await client.get(
                         pinned_url,
                         headers={**headers, "Host": hostname},
                         extensions={"sni_hostname": hostname},
                     )
-                    status = getattr(response, "status_code", 200)
-                    if status in _REDIRECT_STATUSES:
-                        if hop == _MAX_REDIRECTS:
-                            return None
-                        location = ""
-                        response_headers = getattr(response, "headers", None)
-                        if response_headers is not None:
-                            location = response_headers.get("location") or ""
-                        if not location:
-                            return None
-                        nxt = self._sanitize_fetch_url(urljoin(current, location))
-                        if not nxt:
-                            return None
-                        current = nxt
-                        pinned_request = self._pinned_request_for_url(current)
-                        if not pinned_request:
-                            return None
-                        continue
-                    if status >= 400:
+                status = getattr(response, "status_code", 200)
+                if status in _REDIRECT_STATUSES:
+                    if hop == _MAX_REDIRECTS:
                         return None
-                    return response.text
+                    location = ""
+                    response_headers = getattr(response, "headers", None)
+                    if response_headers is not None:
+                        location = response_headers.get("location") or ""
+                    if not location:
+                        return None
+                    nxt = self._sanitize_fetch_url(urljoin(current, location))
+                    if not nxt:
+                        return None
+                    current = nxt
+                    pinned_request = self._pinned_request_for_url(current)
+                    if not pinned_request:
+                        return None
+                    continue
+                if status >= 400:
+                    return None
+                return response.text
         except httpx.HTTPError:
             return None
         except Exception:

@@ -199,6 +199,75 @@ class TestPinnedJobUrlTransport:
         ]
 
     @pytest.mark.asyncio
+    async def test_same_ip_cross_host_redirect_uses_a_new_tls_client_per_hop(self, monkeypatch):
+        """A numeric peer must not pool the first host's TLS connection."""
+        seen = {"clients": [], "handshakes": [], "requests": []}
+
+        def resolve(host, port, *args, **kwargs):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("8.8.8.8", port))]
+
+        class FakeClient:
+            def __init__(self, *args, **kwargs):
+                self.identifier = len(seen["clients"])
+                seen["clients"].append({"identifier": self.identifier, "init": kwargs})
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                seen["clients"][self.identifier]["closed"] = True
+                return None
+
+            async def get(self, url, headers=None, extensions=None):
+                seen["requests"].append(
+                    {
+                        "client": self.identifier,
+                        "url": url,
+                        "headers": headers or {},
+                        "extensions": extensions,
+                    }
+                )
+                seen["handshakes"].append({"client": self.identifier, "sni": (extensions or {}).get("sni_hostname")})
+                if len(seen["requests"]) == 1:
+                    return _Response(302, location="https://jobs.lever.co/acme/1")
+                return _Response(200, "<html>Engineer</html>")
+
+        monkeypatch.setattr("services.job_service.socket.getaddrinfo", resolve)
+        monkeypatch.setattr("services.job_service.httpx.AsyncClient", FakeClient)
+
+        text = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
+
+        assert text == "<html>Engineer</html>"
+        assert [request["url"] for request in seen["requests"]] == [
+            "https://8.8.8.8/jobs/view/9",
+            "https://8.8.8.8/acme/1",
+        ]
+        assert [request["client"] for request in seen["requests"]] == [0, 1]
+        assert [request["headers"]["Host"] for request in seen["requests"]] == [
+            "www.linkedin.com",
+            "jobs.lever.co",
+        ]
+        assert seen["handshakes"] == [
+            {"client": 0, "sni": "www.linkedin.com"},
+            {"client": 1, "sni": "jobs.lever.co"},
+        ]
+        assert [client["init"] for client in seen["clients"]] == [
+            {
+                "follow_redirects": False,
+                "timeout": 30.0,
+                "trust_env": False,
+                "verify": True,
+            },
+            {
+                "follow_redirects": False,
+                "timeout": 30.0,
+                "trust_env": False,
+                "verify": True,
+            },
+        ]
+        assert all(client["closed"] for client in seen["clients"])
+
+    @pytest.mark.asyncio
     async def test_private_redirect_answer_is_rejected_before_second_request(self, monkeypatch):
         seen = {"resolutions": []}
 
