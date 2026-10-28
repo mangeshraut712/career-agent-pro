@@ -398,7 +398,7 @@ class TestJobUrlSafety:
             async def __aexit__(self, *args):
                 return None
 
-            async def get(self, url, headers=None):
+            async def get(self, url, headers=None, extensions=None):
                 seen["url"] = url
                 return FakeResponse()
 
@@ -407,7 +407,8 @@ class TestJobUrlSafety:
         text = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
         assert text
         assert seen["init"]["follow_redirects"] is False
-        assert seen["url"].startswith("https://www.linkedin.com/")
+        assert seen["init"]["trust_env"] is False
+        assert seen["url"].startswith("https://8.8.8.8/")
 
     @pytest.mark.asyncio
     async def test_redirect_hops_are_revalidated(self, monkeypatch):
@@ -433,11 +434,11 @@ class TestJobUrlSafety:
             async def __aexit__(self, *args):
                 return None
 
-            async def get(self, url, headers=None):
+            async def get(self, url, headers=None, extensions=None):
                 requested.append(url)
                 if mode["blocked"]:
                     return FakeResponse(302, "<html>redirect</html>", "https://evil.example/steal")
-                if url == "https://www.linkedin.com/jobs/view/9":
+                if len(requested) == 1:
                     return FakeResponse(302, "redirect", "https://jobs.lever.co/acme/1")
                 return FakeResponse(200, "<html><title>Engineer</title>Build APIs</html>")
 
@@ -445,15 +446,15 @@ class TestJobUrlSafety:
         monkeypatch.setattr("services.job_service.httpx.AsyncClient", FakeClient)
         blocked = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
         assert blocked is None
-        assert requested == ["https://www.linkedin.com/jobs/view/9"]
+        assert requested == ["https://8.8.8.8/jobs/view/9"]
 
         requested.clear()
         mode["blocked"] = False
         followed = await self.service._fetch_with_httpx("https://www.linkedin.com/jobs/view/9")
         assert followed and "Engineer" in followed
         assert requested == [
-            "https://www.linkedin.com/jobs/view/9",
-            "https://jobs.lever.co/acme/1",
+            "https://8.8.8.8/jobs/view/9",
+            "https://8.8.8.8/acme/1",
         ]
 
     @pytest.mark.asyncio

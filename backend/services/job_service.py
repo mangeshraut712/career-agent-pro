@@ -75,29 +75,47 @@ class JobService:
                 return True
         return False
 
-    def _resolves_to_public_ips(self, hostname: str) -> bool:
-        """Reject allowlisted names that resolve to loopback, link-local, or private space."""
+    def _resolve_public_ip(self, hostname: str, port: int = 443) -> Optional[str]:
+        """Resolve one globally-routable peer address for an allowlisted host.
+
+        Every DNS answer must be a global address.  Returning the selected
+        numeric address lets the request use the same answer that was checked,
+        instead of asking the HTTP client to resolve the hostname again.
+        """
         try:
-            infos = socket.getaddrinfo(hostname, None)
-        except socket.gaierror:
-            return False
+            infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+        except OSError:
+            return None
         if not infos:
-            return False
+            return None
+
+        selected: Optional[str] = None
         for info in infos:
-            raw_ip = info[4][0].split("%", 1)[0]
+            raw_ip = str(info[4][0])
+            # Scoped addresses are not valid public peers and should never be
+            # copied into a numeric request URL.
+            if "%" in raw_ip:
+                return None
             try:
                 address = ipaddress.ip_address(raw_ip)
             except ValueError:
-                return False
+                return None
             if not address.is_global:
-                return False
-        return True
+                return None
+            if selected is None:
+                selected = str(address)
+        return selected
+
+    def _resolves_to_public_ips(self, hostname: str) -> bool:
+        """Compatibility wrapper for callers that only need a boolean result."""
+        return self._resolve_public_ip(hostname) is not None
     
     def _sanitize_fetch_url(self, url: str) -> Optional[str]:
-        """Return an https URL that is allowlisted and resolves to public IPs.
+        """Return a canonical, allowlisted HTTPS URL without userinfo.
 
-        http is upgraded to https. Redirect targets are passed through the same
-        checks so an allowed host cannot pivot to an internal address.
+        http is upgraded to https. A selected public peer is resolved only
+        immediately before each request so the transport never re-resolves the
+        checked hostname.
         """
         try:
             parsed = urlparse(url)
@@ -147,14 +165,32 @@ class JobService:
         if not is_allowed:
             return None
 
-        if not self._resolves_to_public_ips(hostname):
-            return None
-
         # Reconstruct URL from validated components. Do not reuse the raw input.
         safe_url = f"https://{hostname}{parsed.path}"
         if parsed.query:
             safe_url += f"?{parsed.query}"
         return safe_url
+
+    def _pinned_request_for_url(self, safe_url: str) -> Optional[tuple[str, str]]:
+        """Build a numeric peer URL while retaining the canonical TLS hostname."""
+        try:
+            parsed = urlparse(safe_url)
+            hostname = (parsed.hostname or "").lower().rstrip(".")
+            port = parsed.port
+        except ValueError:
+            return None
+        if parsed.scheme != "https" or not hostname or port not in (None, 443):
+            return None
+
+        peer_ip = self._resolve_public_ip(hostname, port or 443)
+        if not peer_ip:
+            return None
+
+        peer_authority = f"[{peer_ip}]" if ":" in peer_ip else peer_ip
+        pinned_url = f"https://{peer_authority}{parsed.path}"
+        if parsed.query:
+            pinned_url += f"?{parsed.query}"
+        return pinned_url, hostname
 
     async def _fetch_with_httpx(self, url: str, user_agent: Optional[str] = None) -> Optional[str]:
         """Fetch URL content using httpx with SSRF protection.
@@ -162,8 +198,11 @@ class JobService:
         Redirects are followed manually, and every hop is revalidated. Automatic
         redirect following would let an allowlisted host point at a private address.
         """
-        safe_url = self._sanitize_fetch_url(url)
-        if not safe_url:
+        current = self._sanitize_fetch_url(url)
+        if not current:
+            return None
+        pinned_request = self._pinned_request_for_url(current)
+        if not pinned_request:
             return None
 
         headers = {
@@ -171,10 +210,19 @@ class JobService:
             "Accept": "text/html",
         }
         try:
-            async with httpx.AsyncClient(follow_redirects=False, timeout=30.0) as client:
-                current = safe_url
+            async with httpx.AsyncClient(
+                follow_redirects=False,
+                timeout=30.0,
+                trust_env=False,
+                verify=True,
+            ) as client:
                 for hop in range(_MAX_REDIRECTS + 1):
-                    response = await client.get(current, headers=headers)
+                    pinned_url, hostname = pinned_request
+                    response = await client.get(
+                        pinned_url,
+                        headers={**headers, "Host": hostname},
+                        extensions={"sni_hostname": hostname},
+                    )
                     status = getattr(response, "status_code", 200)
                     if status in _REDIRECT_STATUSES:
                         if hop == _MAX_REDIRECTS:
@@ -189,6 +237,9 @@ class JobService:
                         if not nxt:
                             return None
                         current = nxt
+                        pinned_request = self._pinned_request_for_url(current)
+                        if not pinned_request:
+                            return None
                         continue
                     if status >= 400:
                         return None
