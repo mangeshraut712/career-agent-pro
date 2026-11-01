@@ -3,14 +3,14 @@
  */
 
 // App metadata
-export const APP_NAME = 'CareerAgentPro';
-export const APP_VERSION = '1.1.0';
-export const APP_DESCRIPTION = 'AI-Powered Career Platform';
+export const APP_NAME = "CareerAgentPro";
+export const APP_VERSION = "1.1.0";
+export const APP_DESCRIPTION = "AI-Powered Career Platform";
 
 // API configuration
 export const API_TIMEOUT = 60000; // 60 seconds
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-export const ALLOWED_FILE_TYPES = ['.pdf', '.doc', '.docx', '.txt'];
+export const ALLOWED_FILE_TYPES = [".pdf", ".doc", ".docx", ".txt"];
 
 // UI constants
 export const TOAST_DURATION = 3000; // 3 seconds
@@ -34,49 +34,45 @@ export const FIT_SCORE_FAIR = 40;
 
 // Resume sections
 export const RESUME_SECTIONS = [
-    'summary',
-    'experience',
-    'education',
-    'skills',
-    'certifications',
-    'projects'
+  "summary",
+  "experience",
+  "education",
+  "skills",
+  "certifications",
+  "projects",
 ] as const;
 
 // Company stages
 export const COMPANY_STAGES = [
-    'Early Stage',
-    'Growth Stage',
-    'Enterprise'
+  "Early Stage",
+  "Growth Stage",
+  "Enterprise",
 ] as const;
 
 // Communication types
 export const COMMUNICATION_TYPES = [
-    'cover_letter',
-    'email',
-    'linkedin',
-    'follow_up'
+  "cover_letter",
+  "email",
+  "linkedin",
+  "follow_up",
 ] as const;
 
 // Export formats
-export const EXPORT_FORMATS = [
-    'pdf',
-    'docx',
-    'latex'
-] as const;
+export const EXPORT_FORMATS = ["pdf", "docx", "latex"] as const;
 
 // Routes
 export const ROUTES = {
-    HOME: '/',
-    DASHBOARD: '/dashboard',
-    JOBS: '/jobs',
-    PROFILE: '/profile',
-    RESUMES: '/resumes',
-    COMMUNICATION: '/communication',
-    OUTREACH: '/outreach',
-    INTERVIEW: '/interview',
-    BULLET_LIBRARY: '/bullet-library',
-    FIT_ANALYSIS: '/fit-analysis',
+  HOME: "/",
+  DASHBOARD: "/dashboard",
+  JOBS: "/jobs",
+  PROFILE: "/profile",
+  RESUMES: "/resumes",
+  COMMUNICATION: "/communication",
+  OUTREACH: "/outreach",
+  INTERVIEW: "/interview",
+  BULLET_LIBRARY: "/bullet-library",
+  FIT_ANALYSIS: "/fit-analysis",
 } as const;
 
 // Local storage keys (re-export from storageKeys.ts)
-export { STORAGE_KEYS } from './storageKeys';
+export { STORAGE_KEYS } from "./storageKeys";

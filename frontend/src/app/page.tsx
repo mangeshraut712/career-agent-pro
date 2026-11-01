@@ -9,7 +9,7 @@ import {
   MessageSquare,
   Target,
   LayoutDashboard,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { AppleButton } from "@/components/ui/AppleButton";
 import { AppleCard } from "@/components/ui/AppleCard";
@@ -18,7 +18,13 @@ import { LogoTicker } from "@/components/home/LogoTicker";
 import { Testimonials } from "@/components/home/Testimonials";
 import { HowItWorks } from "@/components/home/HowItWorks";
 
-const FloatingOrb = ({ className, delay = 0 }: { className?: string; delay?: number }) => (
+const FloatingOrb = ({
+  className,
+  delay = 0,
+}: {
+  className?: string;
+  delay?: number;
+}) => (
   <motion.div
     className={`absolute rounded-full blur-3xl opacity-30 ${className}`}
     animate={{
@@ -37,7 +43,10 @@ const FloatingOrb = ({ className, delay = 0 }: { className?: string; delay?: num
 
 export default function Home() {
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
   const dashboardY = useTransform(scrollYProgress, [0, 0.5], [0, 50]);
@@ -45,7 +54,10 @@ export default function Home() {
   return (
     <div className="min-h-screen overflow-hidden bg-background">
       {/* Hero Section */}
-      <section ref={heroRef} className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-visible">
+      <section
+        ref={heroRef}
+        className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-visible"
+      >
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
         <div className="absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-blue-500/10 to-transparent opacity-50 blur-3xl" />
@@ -65,11 +77,16 @@ export default function Home() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-primary/20 shadow-sm mb-8"
             >
               <div className="flex -space-x-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white dark:border-slate-900" />
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-white dark:border-slate-900"
+                  />
                 ))}
               </div>
-              <span className="text-sm font-medium pl-2">Used by engineers from top tech companies</span>
+              <span className="text-sm font-medium pl-2">
+                Used by engineers from top tech companies
+              </span>
             </motion.div>
 
             {/* Headline */}
@@ -92,7 +109,9 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed"
             >
-              Stop guessing keywords. Our AI analyzes job descriptions, tailors your resume, and writes your cover letters. <span className="text-foreground font-semibold">Instantly.</span>
+              Stop guessing keywords. Our AI analyzes job descriptions, tailors
+              your resume, and writes your cover letters.{" "}
+              <span className="text-foreground font-semibold">Instantly.</span>
             </motion.p>
 
             <motion.div
@@ -102,13 +121,23 @@ export default function Home() {
               className="flex flex-wrap justify-center gap-4 mb-20"
             >
               <Link href="/jobs">
-                <AppleButton size="lg" className="h-16 px-8 text-lg font-bold shadow-xl shadow-blue-500/20">
+                <AppleButton
+                  size="lg"
+                  className="h-16 px-8 text-lg font-bold shadow-xl shadow-blue-500/20"
+                >
                   Analyze a Job
-                  <Sparkles size={18} className="ml-2 group-hover:rotate-12 transition-transform" />
+                  <Sparkles
+                    size={18}
+                    className="ml-2 group-hover:rotate-12 transition-transform"
+                  />
                 </AppleButton>
               </Link>
               <Link href="/profile">
-                <AppleButton variant="outline" size="lg" className="h-16 px-8 text-lg font-bold border-2">
+                <AppleButton
+                  variant="outline"
+                  size="lg"
+                  className="h-16 px-8 text-lg font-bold border-2"
+                >
                   Upload Resume
                 </AppleButton>
               </Link>
@@ -137,8 +166,12 @@ export default function Home() {
       <section className="py-32 relative bg-slate-50/50 dark:bg-[#0B0F19]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Built for the Modern Job Market</h2>
-            <p className="text-xl text-muted-foreground">Every tool you need to beat the ATS and impress hiring managers.</p>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
+              Built for the Modern Job Market
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Every tool you need to beat the ATS and impress hiring managers.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
@@ -149,16 +182,28 @@ export default function Home() {
                 <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mb-6">
                   <Target size={32} />
                 </div>
-                <h3 className="text-3xl font-bold mb-4">Precision Job Analysis</h3>
-                <p className="text-muted-foreground text-lg mb-8 max-w-md">Our AI dissects job descriptions to extract hidden keywords, requirements, and culture signals.</p>
+                <h3 className="text-3xl font-bold mb-4">
+                  Precision Job Analysis
+                </h3>
+                <p className="text-muted-foreground text-lg mb-8 max-w-md">
+                  Our AI dissects job descriptions to extract hidden keywords,
+                  requirements, and culture signals.
+                </p>
                 <div className="mt-auto rounded-xl bg-slate-100 dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-sm font-mono text-muted-foreground">Analysis Complete</span>
+                    <span className="text-sm font-mono text-muted-foreground">
+                      Analysis Complete
+                    </span>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm font-medium"><span>React.js</span> <span className="text-green-500">Match</span></div>
-                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div className="w-full h-full bg-green-500" /></div>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>React.js</span>{" "}
+                      <span className="text-green-500">Match</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className="w-full h-full bg-green-500" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -170,7 +215,9 @@ export default function Home() {
                 <FileText size={24} />
               </div>
               <h3 className="text-xl font-bold mb-2">Resume Optimization</h3>
-              <p className="text-muted-foreground">Tailor your resume for every single application instantly.</p>
+              <p className="text-muted-foreground">
+                Tailor your resume for every single application instantly.
+              </p>
             </AppleCard>
 
             {/* 3. Middle Right */}
@@ -179,15 +226,24 @@ export default function Home() {
                 <MessageSquare size={24} />
               </div>
               <h3 className="text-xl font-bold mb-2">Cover Letters</h3>
-              <p className="text-muted-foreground">Generate compelling cover letters that actually get read.</p>
+              <p className="text-muted-foreground">
+                Generate compelling cover letters that actually get read.
+              </p>
             </AppleCard>
 
             {/* 4. Bottom Right - Dashboard */}
             <AppleCard className="md:col-span-1 rounded-[2.5rem] bg-gradient-to-br from-[#0F172A] to-[#1E293B] text-white p-8 relative overflow-hidden hover:shadow-2xl transition-shadow border-slate-200 dark:border-slate-800">
               <div className="relative z-10">
                 <h3 className="text-2xl font-bold mb-2">Track Everything</h3>
-                <p className="text-slate-400 mb-6">Keep all your applications organized.</p>
-                <Link href="/dashboard" className="text-blue-400 font-medium hover:text-blue-300 flex items-center gap-2">Go to Dashboard <ArrowRight size={16} /></Link>
+                <p className="text-slate-400 mb-6">
+                  Keep all your applications organized.
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="text-blue-400 font-medium hover:text-blue-300 flex items-center gap-2"
+                >
+                  Go to Dashboard <ArrowRight size={16} />
+                </Link>
               </div>
               <div className="absolute right-[-20px] bottom-[-20px] opacity-20 rotate-[-15deg]">
                 <LayoutDashboard size={120} />
@@ -205,8 +261,13 @@ export default function Home() {
         <div className="absolute inset-0 bg-blue-600" />
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center text-white">
-          <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-8 max-w-2xl mx-auto">Ready to accelerate your career?</h2>
-          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-xl mx-auto">Join thousands of job seekers using CareerAgentPro to land their dream roles.</p>
+          <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-8 max-w-2xl mx-auto">
+            Ready to accelerate your career?
+          </h2>
+          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-xl mx-auto">
+            Join thousands of job seekers using CareerAgentPro to land their
+            dream roles.
+          </p>
           <Link href="/jobs">
             <button className="px-10 py-5 rounded-full bg-white text-blue-600 font-bold text-xl shadow-2xl hover:bg-blue-50 transition-all hover:scale-105 active:scale-95">
               Get Started for Free

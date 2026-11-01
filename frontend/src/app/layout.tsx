@@ -18,8 +18,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://mangeshraut712.github.io/career-agent-pro/"),
   title: "CareerAgentPro - AI-Powered Career Platform",
-  description: "Your AI Career Co-Pilot. Automate job search, optimize resumes with AI, and land your dream role with CareerAgentPro.",
-  keywords: ["AI resume", "job search", "career platform", "resume optimization", "job application"],
+  description:
+    "Your AI Career Co-Pilot. Automate job search, optimize resumes with AI, and land your dream role with CareerAgentPro.",
+  keywords: [
+    "AI resume",
+    "job search",
+    "career platform",
+    "resume optimization",
+    "job application",
+  ],
   authors: [{ name: "Mangesh Raut" }],
   robots: {
     index: true,
@@ -27,7 +34,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "CareerAgentPro - AI-Powered Career Platform",
-    description: "Your AI Career Co-Pilot. Automate job search, optimize resumes, and land your dream role.",
+    description:
+      "Your AI Career Co-Pilot. Automate job search, optimize resumes, and land your dream role.",
     url: "https://mangeshraut712.github.io/career-agent-pro/",
     siteName: "CareerAgentPro",
     type: "website",
@@ -57,9 +65,7 @@ export default function RootLayout({
       >
         <ToastProvider>
           <Navbar />
-          <main className="flex-1 pt-20">
-            {children}
-          </main>
+          <main className="flex-1 pt-20">{children}</main>
           <Footer />
         </ToastProvider>
       </body>

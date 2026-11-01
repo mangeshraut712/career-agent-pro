@@ -3,20 +3,74 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Menu, X, Link2, FileText, MessageSquare, LayoutDashboard, Mic, Target, ListChecks, ArrowRight, Send, User } from "lucide-react";
+import {
+  Sparkles,
+  Menu,
+  X,
+  Link2,
+  FileText,
+  MessageSquare,
+  LayoutDashboard,
+  Mic,
+  Target,
+  ListChecks,
+  ArrowRight,
+  Send,
+  User,
+} from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // Navigation items configuration
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, gradient: "from-blue-500 to-cyan-400" },
-  { href: "/jobs", label: "Jobs", icon: Link2, gradient: "from-purple-500 to-pink-400" },
-  { href: "/fit-analysis", label: "Fit", icon: Target, gradient: "from-orange-500 to-red-400" },
-  { href: "/resumes", label: "Resumes", icon: FileText, gradient: "from-indigo-500 to-violet-400" },
-  { href: "/bullet-library", label: "Bullets", icon: ListChecks, gradient: "from-green-500 to-emerald-400" },
-  { href: "/interview", label: "Interview", icon: Mic, gradient: "from-pink-500 to-rose-400" },
-  { href: "/outreach", label: "Outreach", icon: Send, gradient: "from-cyan-500 to-blue-400" },
-  { href: "/communication", label: "Messages", icon: MessageSquare, gradient: "from-sky-500 to-indigo-400" },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    gradient: "from-blue-500 to-cyan-400",
+  },
+  {
+    href: "/jobs",
+    label: "Jobs",
+    icon: Link2,
+    gradient: "from-purple-500 to-pink-400",
+  },
+  {
+    href: "/fit-analysis",
+    label: "Fit",
+    icon: Target,
+    gradient: "from-orange-500 to-red-400",
+  },
+  {
+    href: "/resumes",
+    label: "Resumes",
+    icon: FileText,
+    gradient: "from-indigo-500 to-violet-400",
+  },
+  {
+    href: "/bullet-library",
+    label: "Bullets",
+    icon: ListChecks,
+    gradient: "from-green-500 to-emerald-400",
+  },
+  {
+    href: "/interview",
+    label: "Interview",
+    icon: Mic,
+    gradient: "from-pink-500 to-rose-400",
+  },
+  {
+    href: "/outreach",
+    label: "Outreach",
+    icon: Send,
+    gradient: "from-cyan-500 to-blue-400",
+  },
+  {
+    href: "/communication",
+    label: "Messages",
+    icon: MessageSquare,
+    gradient: "from-sky-500 to-indigo-400",
+  },
 ];
 
 export function Navbar() {
@@ -28,7 +82,9 @@ export function Navbar() {
   // Track mount state without re-render
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -76,7 +132,10 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 sm:h-18">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group relative z-10">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 group relative z-10"
+          >
             <motion.div
               whileHover={{ scale: 1.05, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
@@ -89,8 +148,13 @@ export function Navbar() {
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-purple-600 blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10" />
             </motion.div>
             <span className="text-lg sm:text-xl font-bold tracking-tight">
-              Career<span className="bg-gradient-to-r from-primary via-blue-500 to-purple-500 bg-clip-text text-transparent">Agent</span>
-              <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">Pro</span>
+              Career
+              <span className="bg-gradient-to-r from-primary via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                Agent
+              </span>
+              <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Pro
+              </span>
             </span>
           </Link>
 
@@ -106,24 +170,34 @@ export function Navbar() {
                       className="relative group"
                     >
                       <div
-                        className={`px-3 lg:px-4 py-2 rounded-full text-[13px] font-medium transition-all relative flex items-center gap-1.5 ${isActive
-                          ? "text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                          }`}
+                        className={`px-3 lg:px-4 py-2 rounded-full text-[13px] font-medium transition-all relative flex items-center gap-1.5 ${
+                          isActive
+                            ? "text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <item.icon size={14} className={isActive ? "text-primary" : ""} />
+                        <item.icon
+                          size={14}
+                          className={isActive ? "text-primary" : ""}
+                        />
                         <span>{item.label}</span>
                         {isActive && (
                           <motion.div
                             layoutId="navbar-indicator"
                             className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-[0.08] rounded-full -z-10 border border-primary/10`}
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 30,
+                            }}
                           />
                         )}
                       </div>
                       {/* Hover gradient effect */}
                       {!isActive && (
-                        <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-[0.05] rounded-full transition-opacity`} />
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-[0.05] rounded-full transition-opacity`}
+                        />
                       )}
                     </motion.div>
                   </Link>
@@ -138,7 +212,11 @@ export function Navbar() {
             <ThemeToggle />
 
             {/* Profile Link (Icon) */}
-            <Link href="/profile" aria-label="Profile" className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+            <Link
+              href="/profile"
+              aria-label="Profile"
+              className="hidden sm:flex items-center justify-center w-9 h-9 rounded-full bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+            >
               <User size={18} />
             </Link>
 
@@ -147,12 +225,18 @@ export function Navbar() {
               <div className="hidden sm:block">
                 <Link href="/jobs">
                   <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: "0 10px 30px -5px rgba(0, 113, 227, 0.35)" }}
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 10px 30px -5px rgba(0, 113, 227, 0.35)",
+                    }}
                     whileTap={{ scale: 0.98 }}
                     className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary via-blue-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-primary/25 overflow-hidden"
                   >
                     <span className="relative z-10">Analyze Job</span>
-                    <ArrowRight size={14} className="relative z-10 group-hover:rotate-12 transition-transform" />
+                    <ArrowRight
+                      size={14}
+                      className="relative z-10 group-hover:rotate-12 transition-transform"
+                    />
                     {/* Animated shine effect */}
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                   </motion.button>
@@ -212,12 +296,15 @@ export function Navbar() {
                       className="block"
                     >
                       <div
-                        className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all ${isActive
-                          ? `bg-gradient-to-r ${item.gradient} bg-opacity-10 text-foreground shadow-sm border border-primary/10`
-                          : "text-foreground hover:bg-secondary/80"
-                          }`}
+                        className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all ${
+                          isActive
+                            ? `bg-gradient-to-r ${item.gradient} bg-opacity-10 text-foreground shadow-sm border border-primary/10`
+                            : "text-foreground hover:bg-secondary/80"
+                        }`}
                       >
-                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-md ${!isActive && "opacity-60 group-hover:opacity-100"} transition-opacity`}>
+                        <div
+                          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-md ${!isActive && "opacity-60 group-hover:opacity-100"} transition-opacity`}
+                        >
                           <item.icon size={18} className="text-white" />
                         </div>
                         <span>{item.label}</span>

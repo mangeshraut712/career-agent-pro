@@ -12,16 +12,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-
 /**
  * Format a date to a readable string
  */
 export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -30,7 +29,7 @@ export function formatDate(date: Date | string): string {
  */
 export function truncate(text: string, length: number): string {
   if (text.length <= length) return text;
-  return text.substring(0, length) + '...';
+  return text.substring(0, length) + "...";
 }
 
 /**
@@ -46,9 +45,9 @@ export function calculatePercentage(value: number, total: number): number {
  */
 export function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 /**
@@ -76,7 +75,7 @@ export function isValidUrl(url: string): boolean {
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
   return (...args: Parameters<T>) => {
@@ -108,25 +107,25 @@ export function generateId(): string {
  * Format file size
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }
 
 /**
  * Sleep/delay function
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * Check if code is running on client side
  */
 export function isClient(): boolean {
-  return typeof window !== 'undefined';
+  return typeof window !== "undefined";
 }
 
 /**
@@ -134,9 +133,9 @@ export function isClient(): boolean {
  */
 export function getInitials(name: string): string {
   return name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
     .toUpperCase()
     .substring(0, 2);
 }
