@@ -1,18 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
-
-// Optimized font loading with preload
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-  preload: true,
-  fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
-});
 
 // Viewport configuration for mobile optimization
 export const viewport: Viewport = {
@@ -60,11 +50,9 @@ export default function RootLayout({
       <head>
         {/* DNS Prefetch for external resources */}
         <link rel="dns-prefetch" href="https://openrouter.ai" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body
-        className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col`}
+        className="font-sans antialiased min-h-screen flex flex-col"
         suppressHydrationWarning
       >
         <ToastProvider>

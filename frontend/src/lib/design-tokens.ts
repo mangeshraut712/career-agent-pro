@@ -7,7 +7,7 @@ export const designTokens = {
     // Typography
     typography: {
         fontFamily: {
-            sans: 'var(--font-inter), system-ui, -apple-system, sans-serif',
+            sans: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
             mono: 'ui-monospace, monospace',
         },
         fontSize: {
