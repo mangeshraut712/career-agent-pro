@@ -17,7 +17,7 @@ Thank you for your interest in contributing to CareerAgentPro! This document pro
 
 ## 🤝 Code of Conduct
 
-This project adheres to a Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [your-email@example.com].
+This project adheres to a Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [mbr63@drexel.edu].
 
 ### Our Standards
 
@@ -36,8 +36,8 @@ This project adheres to a Code of Conduct. By participating, you are expected to
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/AIJobHelper.git
-   cd AIJobHelper
+   git clone https://github.com/YOUR_USERNAME/career-agent-pro.git
+   cd career-agent-pro
    ```
 
 ### Setup Development Environment
@@ -441,7 +441,7 @@ Issues and PRs are labeled to help organization:
 - 💬 **GitHub Discussions**: Ask questions
 - 🐛 **GitHub Issues**: Report bugs
 - 📖 **Documentation**: Read the README
-- 📧 **Email**: [your-email@example.com]
+- 📧 **Email**: [mbr63@drexel.edu]
 
 ---
 
