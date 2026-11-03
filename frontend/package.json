@@ -4,16 +4,16 @@
   "description": "AI-Powered Career Platform - Your AI Career Co-Pilot for job search automation",
   "author": {
     "name": "Mangesh Raut",
-    "email": "your-email@example.com",
-    "url": "https://github.com/yourusername"
+    "email": "mbr63@drexel.edu",
+    "url": "https://github.com/mangeshraut712"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/AIJobHelper"
+    "url": "https://github.com/mangeshraut712/career-agent-pro"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/AIJobHelper/issues"
+    "url": "https://github.com/mangeshraut712/career-agent-pro/issues"
   },
   "homepage": "https://mangeshraut712.github.io/career-agent-pro/",
   "keywords": [
