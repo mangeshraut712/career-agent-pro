@@ -42,20 +42,66 @@ ALLOWED_DOMAINS = frozenset([
 ])
 
 
-# LinkedIn title clean-up. Each whitespace run may only start a match at its
-# first character ((?<!\s)), so a title made of a long run of spaces is
-# scanned once instead of once per space (CodeQL py/polynomial-redos).
-# The leftmost match is unchanged, so the substitutions give the same result.
-_LINKEDIN_SUFFIX_RE = re.compile(r'(?<!\s)\s*\|\s*LinkedIn\s*$')
-_HIRING_PREFIX_RE = re.compile(r'^.*?(?<!\s)\s+hiring\s+', re.IGNORECASE)
-_LOCATION_SUFFIX_RE = re.compile(r'(?<!\s)\s+in\s+[A-Z][a-zA-Z\s,]+$')
+# LinkedIn title clean-up, written as linear scans: the earlier one-line regexes
+# (r'\s*\|\s*LinkedIn\s*$', r'^.*?\s+hiring\s+', r'\s+in\s+[A-Z][a-zA-Z\s,]+$')
+# retried every whitespace run from each of its characters (CodeQL
+# py/polynomial-redos). These helpers return the same strings.
+_HIRING_RE = re.compile(r'\shiring\s', re.IGNORECASE)
+_IN_RE = re.compile(r'\sin(?=\s)')
+_ASCII_UPPER = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+_PLACE_CHARS = frozenset('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,')
+
+
+def _strip_linkedin_suffix(title: str) -> str:
+    head = title.rstrip()
+    if not head.endswith('LinkedIn'):
+        return title
+    head = head[:-len('LinkedIn')].rstrip()
+    if not head.endswith('|'):
+        return title
+    return head[:-1].rstrip()
+
+
+def _strip_hiring_prefix(title: str) -> str:
+    match = _HIRING_RE.search(title)
+    if not match:
+        return title
+    # In the old r'^.*?\s+hiring\s+' the ".*?" stopped at the first newline, so
+    # the whitespace before "hiring" has to start on the first line.
+    run_start = match.start()
+    while run_start > 0 and title[run_start - 1].isspace():
+        run_start -= 1
+    first_newline = title.find('\n')
+    if first_newline != -1 and run_start > first_newline:
+        return title
+    end = match.end()
+    while end < len(title) and title[end].isspace():
+        end += 1
+    return title[end:]
+
+
+def _strip_location_suffix(title: str) -> str:
+    # The suffix " in <Place>" may only contain letters, commas and whitespace,
+    # so only look inside the longest tail made of those characters.
+    tail = len(title)
+    while tail > 0 and (title[tail - 1] in _PLACE_CHARS or title[tail - 1].isspace()):
+        tail -= 1
+    for match in _IN_RE.finditer(title, tail):
+        place = match.end()
+        while place < len(title) and title[place].isspace():
+            place += 1
+        # "[A-Z][a-zA-Z\s,]+$": a capital letter and at least one more character.
+        if place + 1 < len(title) and title[place] in _ASCII_UPPER:
+            cut = match.start()
+            while cut > tail and title[cut - 1].isspace():
+                cut -= 1
+            return title[:cut]
+    return title
 
 
 def clean_linkedin_title(title: str) -> str:
     """Strip LinkedIn's "| LinkedIn", "<Company> hiring" and "in <Place>" parts."""
-    title = _LINKEDIN_SUFFIX_RE.sub('', title)
-    title = _HIRING_PREFIX_RE.sub('', title)
-    return _LOCATION_SUFFIX_RE.sub('', title)
+    return _strip_location_suffix(_strip_hiring_prefix(_strip_linkedin_suffix(title)))
 
 
 class JobService:

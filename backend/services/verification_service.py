@@ -11,12 +11,23 @@ from enum import Enum
 
 from services.bullet_framework import MetricDiversifier, ActionVerbChecker
 
-# A metric in the summary: "40%", "$1,200" or "5k"/"3 M". The (?<!\d) makes a
-# digit run start a match only at its first digit, so a long run of digits is
-# scanned once rather than once per digit (CodeQL py/polynomial-redos).
-_SUMMARY_METRIC_RE = re.compile(
-    r"((?<!\d)\d+%|\$[\d,]+|(?<!\d)\d+\s*(?:k|m|b))", re.IGNORECASE
-)
+# A metric in the summary: "40%", "$1,200" or "5k"/"3 M". Each digit run is
+# checked once from its end; the earlier single regex retried a long run from
+# every digit (CodeQL py/polynomial-redos).
+_DIGITS_RE = re.compile(r"\d+")
+_DOLLAR_AMOUNT_RE = re.compile(r"\$[\d,]")
+_MAGNITUDE_RE = re.compile(r"\s*[kmb]", re.IGNORECASE)
+
+
+def _has_summary_metric(summary: str) -> bool:
+    if _DOLLAR_AMOUNT_RE.search(summary):
+        return True
+    for match in _DIGITS_RE.finditer(summary):
+        end = match.end()
+        if summary.startswith("%", end) or _MAGNITUDE_RE.match(summary, end):
+            return True
+    return False
+
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +132,7 @@ class ResumeVerifier:
         summary = (data.get("summary") or "").strip()
         if not summary:
             return VerificationResult("summary_metrics", VerificationStatus.WARNING, "Summary missing")
-        has_metrics = bool(_SUMMARY_METRIC_RE.search(summary))
+        has_metrics = bool(_has_summary_metric(summary))
         if has_metrics:
             return VerificationResult(
                 "summary_metrics",

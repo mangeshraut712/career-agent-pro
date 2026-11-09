@@ -9,7 +9,7 @@ results on normal input and bound the time on long runs.
 import time
 
 from services.job_service import clean_linkedin_title
-from services.verification_service import _SUMMARY_METRIC_RE
+from services.verification_service import _has_summary_metric
 
 
 def _elapsed(fn, *args):
@@ -31,14 +31,15 @@ def test_clean_linkedin_title_is_linear_on_long_whitespace():
     title = " " * 50_000 + "x"
     # The old patterns took several seconds here; the new ones take milliseconds.
     assert _elapsed(clean_linkedin_title, title) < 0.5
+    assert _elapsed(clean_linkedin_title, " in A" + "\tin\tA" * 20_000 + "!") < 0.5
 
 
 def test_summary_metric_pattern_keeps_existing_matches():
     for text in ("Grew revenue 40%", "Saved $1,200", "Led a 5k user beta", "Raised 3 M"):
-        assert _SUMMARY_METRIC_RE.search(text), text
+        assert _has_summary_metric(text), text
     for text in ("Product manager with strong skills", "Shipped v2"):
-        assert not _SUMMARY_METRIC_RE.search(text), text
+        assert not _has_summary_metric(text), text
 
 
 def test_summary_metric_pattern_is_linear_on_long_digit_runs():
-    assert _elapsed(_SUMMARY_METRIC_RE.search, "9" * 50_000 + "x") < 0.5
+    assert _elapsed(_has_summary_metric, "9" * 50_000 + "x") < 0.5
