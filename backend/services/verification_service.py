@@ -16,7 +16,6 @@ from services.bullet_framework import MetricDiversifier, ActionVerbChecker
 # every digit (CodeQL py/polynomial-redos).
 _DIGITS_RE = re.compile(r"\d+")
 _DOLLAR_AMOUNT_RE = re.compile(r"\$[\d,]")
-_MAGNITUDE_RE = re.compile(r"\s*[kmb]", re.IGNORECASE)
 
 
 def _has_summary_metric(summary: str) -> bool:
@@ -24,7 +23,12 @@ def _has_summary_metric(summary: str) -> bool:
         return True
     for match in _DIGITS_RE.finditer(summary):
         end = match.end()
-        if summary.startswith("%", end) or _MAGNITUDE_RE.match(summary, end):
+        if summary.startswith("%", end):
+            return True
+        while end < len(summary) and summary[end].isspace():
+            end += 1
+        # lower() also folds KELVIN SIGN to "k", as re.IGNORECASE did.
+        if end < len(summary) and summary[end].lower() in ("k", "m", "b"):
             return True
     return False
 
