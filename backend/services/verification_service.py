@@ -11,6 +11,28 @@ from enum import Enum
 
 from services.bullet_framework import MetricDiversifier, ActionVerbChecker
 
+# A metric in the summary: "40%", "$1,200" or "5k"/"3 M". Each digit run is
+# checked once from its end; the earlier single regex retried a long run from
+# every digit (CodeQL py/polynomial-redos).
+_DIGITS_RE = re.compile(r"\d+")
+_DOLLAR_AMOUNT_RE = re.compile(r"\$[\d,]")
+
+
+def _has_summary_metric(summary: str) -> bool:
+    if _DOLLAR_AMOUNT_RE.search(summary):
+        return True
+    for match in _DIGITS_RE.finditer(summary):
+        end = match.end()
+        if summary.startswith("%", end):
+            return True
+        while end < len(summary) and summary[end].isspace():
+            end += 1
+        # lower() also folds KELVIN SIGN to "k", as re.IGNORECASE did.
+        if end < len(summary) and summary[end].lower() in ("k", "m", "b"):
+            return True
+    return False
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,7 +136,7 @@ class ResumeVerifier:
         summary = (data.get("summary") or "").strip()
         if not summary:
             return VerificationResult("summary_metrics", VerificationStatus.WARNING, "Summary missing")
-        has_metrics = bool(re.search(r"(\d+%|\$[\d,]+|\d+\s*(?:k|m|b))", summary, re.IGNORECASE))
+        has_metrics = bool(_has_summary_metric(summary))
         if has_metrics:
             return VerificationResult(
                 "summary_metrics",
