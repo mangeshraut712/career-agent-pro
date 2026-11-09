@@ -11,6 +11,13 @@ from enum import Enum
 
 from services.bullet_framework import MetricDiversifier, ActionVerbChecker
 
+# A metric in the summary: "40%", "$1,200" or "5k"/"3 M". The (?<!\d) makes a
+# digit run start a match only at its first digit, so a long run of digits is
+# scanned once rather than once per digit (CodeQL py/polynomial-redos).
+_SUMMARY_METRIC_RE = re.compile(
+    r"((?<!\d)\d+%|\$[\d,]+|(?<!\d)\d+\s*(?:k|m|b))", re.IGNORECASE
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -114,7 +121,7 @@ class ResumeVerifier:
         summary = (data.get("summary") or "").strip()
         if not summary:
             return VerificationResult("summary_metrics", VerificationStatus.WARNING, "Summary missing")
-        has_metrics = bool(re.search(r"(\d+%|\$[\d,]+|\d+\s*(?:k|m|b))", summary, re.IGNORECASE))
+        has_metrics = bool(_SUMMARY_METRIC_RE.search(summary))
         if has_metrics:
             return VerificationResult(
                 "summary_metrics",

@@ -42,6 +42,22 @@ ALLOWED_DOMAINS = frozenset([
 ])
 
 
+# LinkedIn title clean-up. Each whitespace run may only start a match at its
+# first character ((?<!\s)), so a title made of a long run of spaces is
+# scanned once instead of once per space (CodeQL py/polynomial-redos).
+# The leftmost match is unchanged, so the substitutions give the same result.
+_LINKEDIN_SUFFIX_RE = re.compile(r'(?<!\s)\s*\|\s*LinkedIn\s*$')
+_HIRING_PREFIX_RE = re.compile(r'^.*?(?<!\s)\s+hiring\s+', re.IGNORECASE)
+_LOCATION_SUFFIX_RE = re.compile(r'(?<!\s)\s+in\s+[A-Z][a-zA-Z\s,]+$')
+
+
+def clean_linkedin_title(title: str) -> str:
+    """Strip LinkedIn's "| LinkedIn", "<Company> hiring" and "in <Place>" parts."""
+    title = _LINKEDIN_SUFFIX_RE.sub('', title)
+    title = _HIRING_PREFIX_RE.sub('', title)
+    return _LOCATION_SUFFIX_RE.sub('', title)
+
+
 class JobService:
     def __init__(self, ai_service: AIService):
         self.ai_service = ai_service
@@ -570,9 +586,7 @@ Return ONLY valid JSON with these fields:
                 break
         
         # Clean up LinkedIn-style titles
-        title = re.sub(r'\s*\|\s*LinkedIn\s*$', '', title)
-        title = re.sub(r'^.*?\s+hiring\s+', '', title, flags=re.IGNORECASE)
-        title = re.sub(r'\s+in\s+[A-Z][a-zA-Z\s,]+$', '', title)
+        title = clean_linkedin_title(title)
         
         # Extract company
         company = self._extract_company_from_url(url)
