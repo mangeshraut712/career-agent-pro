@@ -204,7 +204,9 @@ async def validation_exception_handler(request, exc):
     """Handle validation errors."""
     logger.warning(f"Validation error: {exc.errors()}")
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        # Literal 422: the constant was renamed to HTTP_422_UNPROCESSABLE_CONTENT
+        # in Starlette 0.48 and the old name now warns; fastapi>=0.128 allows older Starlette.
+        status_code=422,
         content={"error": "Validation error", "details": exc.errors()},
     )
 
