@@ -2,8 +2,9 @@
 import io
 import logging
 
-import PyPDF2
 import docx
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 from security_utils import MAX_EXTRACTED_CHARS, MAX_PDF_PAGES, ResumeUploadError, validate_resume_filename
 
@@ -18,7 +19,7 @@ class ResumeParser:
         """Extract text from PDF file."""
         text = ""
         try:
-            reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+            reader = PdfReader(io.BytesIO(file_bytes))
             page_count = len(reader.pages)
             if page_count == 0:
                 logger.warning("PDF file has no pages")
@@ -39,7 +40,7 @@ class ResumeParser:
                 logger.warning("No text extracted from PDF")
         except ResumeUploadError:
             raise
-        except PyPDF2.errors.PdfReadError:
+        except PdfReadError:
             logger.exception("PDF read error")
             raise ResumeUploadError("Could not read file. Supported formats: PDF, DOCX, TXT.")
         except Exception:
