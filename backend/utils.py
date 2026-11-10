@@ -41,9 +41,13 @@ def validate_url(url: str) -> bool:
 
 def truncate_text(text: str, max_length: int = 1000, suffix: str = "...") -> str:
     """Truncate text to maximum length."""
+    if max_length < 0:
+        raise ValueError(f"max_length must be non-negative, got {max_length}")
     if len(text) <= max_length:
         return text
-    return text[:max_length - len(suffix)] + suffix
+    if max_length < len(suffix):
+        return text[:max_length]
+    return text[: max_length - len(suffix)] + suffix
 
 
 def extract_domain(url: str) -> Optional[str]:
