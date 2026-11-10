@@ -50,7 +50,10 @@ def extract_domain(url: str) -> Optional[str]:
     """Extract domain from URL."""
     try:
         parsed = urlparse(url)
-        return parsed.netloc.lower().replace("www.", "")
+        host = parsed.netloc.lower()
+        if host.startswith("www."):
+            host = host[4:]
+        return host or None
     except Exception:
         return None
 
