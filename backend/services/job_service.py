@@ -857,7 +857,7 @@ Return ONLY valid JSON with these fields:
         """Detect the job board source from URL using secure domain parsing"""
         try:
             parsed = urlparse(url)
-            domain = parsed.netloc.lower().replace("www.", "")
+            domain = (parsed.netloc.lower()[4:] if parsed.netloc.lower().startswith("www.") else parsed.netloc.lower())
             
             if domain == "linkedin.com" or domain.endswith(".linkedin.com"):
                 return 'linkedin'
@@ -897,7 +897,7 @@ Return ONLY valid JSON with these fields:
         """Extract company name from URL domain securely"""
         try:
             parsed = urlparse(url)
-            domain = parsed.netloc.replace("www.", "")
+            domain = (parsed.netloc[4:] if parsed.netloc.lower().startswith("www.") else parsed.netloc)
             
             # Special handling for ATS subdomains
             ats_domains = ["ashbyhq.com", "lever.co", "greenhouse.io"]
