@@ -201,6 +201,18 @@ class TestUploads:
         with pytest.raises(ResumeUploadError, match="30 page"):
             ResumeParser.extract_text(payload, "long.pdf")
 
+    def test_pdf_text_is_extracted(self):
+        pdf = FPDF()
+        pdf.set_font("Helvetica", size=12)
+        pdf.add_page()
+        pdf.cell(0, 10, "Ada Lovelace - Analytical Engine programmer")
+        text = ResumeParser.extract_text(bytes(pdf.output()), "resume.pdf")
+        assert "Ada Lovelace" in text
+
+    def test_corrupt_pdf_is_a_clean_upload_error(self):
+        with pytest.raises(ResumeUploadError, match="Could not read file"):
+            ResumeParser.extract_text(b"%PDF-1.4 not really a pdf", "broken.pdf")
+
     @pytest.mark.asyncio
     async def test_read_limited_upload_counts_chunks(self):
         class FakeUpload:
