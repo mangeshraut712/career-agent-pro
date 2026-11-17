@@ -110,27 +110,26 @@ class CompetencyAssessor:
         Returns:
             Dict with competencies, weightage, stage, and recommendations
         """
-        # Combine all text
-        full_text = jd_text.lower()
+        # Combine all text safely
+        full_text = (jd_text or "").lower()
         if requirements:
-            full_text += " ".join(requirements).lower()
+            full_text += " " + " ".join(requirements).lower()
         if skills:
-            full_text += " ".join(skills).lower()
+            full_text += " " + " ".join(skills).lower()
         
         # Extract competencies with scores
         competencies = cls._extract_competencies(full_text)
         
         # Calculate weightage (percentage distribution)
-        total_score = sum(c["score"] for c in competencies)
-        if total_score > 0:
-            for comp in competencies:
-                comp["weightage"] = round((comp["score"] / total_score) * 100, 1)
+        total_score = sum(c.get("score", 0) for c in competencies)
+        for comp in competencies:
+            comp["weightage"] = round((comp["score"] / total_score) * 100, 1) if total_score > 0 else 0.0
         
         # Detect company stage
         stage = cls._detect_company_stage(full_text)
         
         # Extract key requirements
-        key_requirements = cls._extract_key_requirements(jd_text)
+        key_requirements = cls._extract_key_requirements(jd_text or "")
         
         # Generate recommendations
         recommendations = cls._generate_recommendations(competencies, stage)
@@ -161,15 +160,17 @@ class CompetencyAssessor:
         Returns:
             Dict with fit scores per competency and overall
         """
-        user_text = " ".join(user_skills).lower()
-        user_text += " ".join([
+        user_skills = user_skills or []
+        user_experience = user_experience or []
+        user_text = (" ".join(user_skills) + " " + " ".join([
             f"{exp.get('role', '')} {exp.get('description', '')}"
             for exp in user_experience
-        ]).lower()
+            if isinstance(exp, dict)
+        ])).lower()
         
         competency_scores = []
         
-        for comp in jd_assessment["competencies"]:
+        for comp in jd_assessment.get("competencies", []):
             # Count matching keywords
             keywords = cls.COMPETENCY_KEYWORDS.get(comp["name"], [])
             matches = sum(1 for kw in keywords if kw in user_text)
@@ -182,7 +183,7 @@ class CompetencyAssessor:
             
             competency_scores.append({
                 "competency": comp["name"],
-                "weightage": comp["weightage"],
+                "weightage": comp.get("weightage", 0.0),
                 "your_score": score,
                 "matched_keywords": matches,
                 "total_keywords": total_keywords,
