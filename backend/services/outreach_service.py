@@ -195,11 +195,13 @@ Best,
     @classmethod
     def create_strategy(
         cls,
-        job_data: Dict[str, Any],
-        resume_data: Dict[str, Any],
+        job_data: Optional[Dict[str, Any]] = None,
+        resume_data: Optional[Dict[str, Any]] = None,
         has_mutual_connections: bool = False
     ) -> OutreachStrategy:
         """Create a comprehensive outreach strategy."""
+        job_data = job_data or {}
+        resume_data = resume_data or {}
         
         job_title = job_data.get("title", "the position")
         company = job_data.get("company", "the company")
@@ -267,14 +269,20 @@ Best,
         return messages
     
     @classmethod
-    def _build_context(cls, job_data: Dict[str, Any], resume_data: Dict[str, Any]) -> Dict[str, str]:
+    def _build_context(cls, job_data: Optional[Dict[str, Any]] = None, resume_data: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         """Build context for template filling."""
+        job_data = job_data or {}
+        resume_data = resume_data or {}
         skills = resume_data.get("skills", [])
         if isinstance(skills, str):
-            skills = [s.strip() for s in skills.split(",")]
+            skills = [s.strip() for s in skills.split(",") if s.strip()]
+        elif not isinstance(skills, list):
+            skills = []
         
         experience = resume_data.get("experience", [])
-        recent_company = experience[0].get("company", "my previous company") if experience else "my previous company"
+        recent_company = "my previous company"
+        if isinstance(experience, list) and experience and isinstance(experience[0], dict):
+            recent_company = experience[0].get("company", "my previous company")
         
         highlights = cls._extract_highlights(resume_data)
         
@@ -298,22 +306,29 @@ Best,
         }
     
     @classmethod
-    def _extract_highlights(cls, resume_data: Dict[str, Any]) -> List[str]:
+    def _extract_highlights(cls, resume_data: Optional[Dict[str, Any]] = None) -> List[str]:
         """Extract 3 key highlights from resume."""
+        resume_data = resume_data or {}
         highlights = []
         
         # From summary
-        summary = resume_data.get("summary", "")
+        summary = str(resume_data.get("summary") or "")
         if summary:
             highlights.append(summary[:100] + "..." if len(summary) > 100 else summary)
         
         # From experience
-        for exp in resume_data.get("experience", [])[:2]:
-            desc = exp.get("description", "")
-            if isinstance(desc, list) and desc:
-                highlights.append(desc[0][:80] + "..." if len(desc[0]) > 80 else desc[0])
-            elif desc:
-                highlights.append(desc[:80] + "..." if len(desc) > 80 else desc)
+        exp_list = resume_data.get("experience", [])
+        if isinstance(exp_list, list):
+            for exp in exp_list[:2]:
+                if not isinstance(exp, dict):
+                    continue
+                desc = exp.get("description", "")
+                if isinstance(desc, list) and desc:
+                    first_desc = str(desc[0])
+                    highlights.append(first_desc[:80] + "..." if len(first_desc) > 80 else first_desc)
+                elif desc:
+                    desc_str = str(desc)
+                    highlights.append(desc_str[:80] + "..." if len(desc_str) > 80 else desc_str)
         
         return highlights[:3]
     
@@ -395,9 +410,12 @@ Best,
         ]
 
 
-def generate_outreach_strategy(job_data: Dict, resume_data: Dict) -> Dict[str, Any]:
+def generate_outreach_strategy(
+    job_data: Optional[Dict[str, Any]] = None,
+    resume_data: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """API convenience function."""
-    strategy = OutreachCreator.create_strategy(job_data, resume_data)
+    strategy = OutreachCreator.create_strategy(job_data or {}, resume_data or {})
     
     return {
         "job_title": strategy.job_title,
