@@ -88,17 +88,20 @@ class AutofillService:
                 "location": ["location"],
             },
         }
-        return mappings.get(platform.lower(), mappings["google"])
+        platform_key = (platform or "google").strip().lower()
+        return mappings.get(platform_key, mappings["google"])
     
     @staticmethod
-    def generate_autofill_script(resume_data: dict, platform: str) -> str:
+    def generate_autofill_script(resume_data: dict, platform: str = "google") -> str:
         """
         Generates a JavaScript snippet that can be executed in the browser to autofill fields.
         """
+        if not isinstance(resume_data, dict):
+            resume_data = {}
         mapping = AutofillService.get_field_mappings(platform)
         
         # Simple name splitting
-        name = resume_data.get("name", "")
+        name = str(resume_data.get("name") or "")
         name_parts = name.split()
         first_name = name_parts[0] if name_parts else ""
         last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
