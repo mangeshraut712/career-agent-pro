@@ -23,6 +23,11 @@ class BulletLibraryManager:
     
     # In-memory storage (replace with database in production)
     _storage: Dict[str, BulletLibraryItem] = {}
+
+    @classmethod
+    def clear_library(cls) -> None:
+        """Clear all bullets from in-memory storage (useful for testing or reset)"""
+        cls._storage.clear()
     
     @classmethod
     def add_bullet(
@@ -46,7 +51,12 @@ class BulletLibraryManager:
             "validation": None,
             "message": ""
         }
+
+        if bullet is None:
+            result["message"] = "Bullet cannot be None"
+            return result
         
+        validation = None
         # Validate if requested
         if validate:
             validation = BulletValidator.validate_bullet(bullet)
@@ -65,7 +75,7 @@ class BulletLibraryManager:
             bullet=bullet,
             created_at=datetime.now().isoformat(),
             usage_count=0,
-            quality_score=validation.quality_score if validate else 0
+            quality_score=validation.quality_score if (validate and validation) else 0
         )
         
         # Store
@@ -90,12 +100,19 @@ class BulletLibraryManager:
         validate: bool = True
     ) -> Dict:
         """Update an existing bullet"""
+        if bullet is None:
+            return {
+                "success": False,
+                "message": "Bullet cannot be None"
+            }
+
         if bullet_id not in cls._storage:
             return {
                 "success": False,
                 "message": f"Bullet {bullet_id} not found"
             }
         
+        validation = None
         # Validate if requested
         if validate:
             validation = BulletValidator.validate_bullet(bullet)
@@ -109,7 +126,7 @@ class BulletLibraryManager:
         # Update the bullet
         existing = cls._storage[bullet_id]
         existing.bullet = bullet
-        existing.quality_score = validation.quality_score if validate else existing.quality_score
+        existing.quality_score = validation.quality_score if (validate and validation) else existing.quality_score
         
         return {
             "success": True,
@@ -220,7 +237,7 @@ class BulletLibraryManager:
             relevance = cls._calculate_relevance(
                 bullet_text=full_text,
                 competency=bullet.competency,
-                jd_competencies=jd_assessment["competencies"],
+                jd_competencies=jd_assessment.get("competencies", []) if isinstance(jd_assessment, dict) else [],
                 target_stage=criteria.company_stage
             )
             
@@ -247,7 +264,7 @@ class BulletLibraryManager:
             selected = cls._apply_distribution(
                 scored_bullets=scored_bullets,
                 distribution=criteria.distribution,
-                jd_competencies=jd_assessment["competencies"]
+                jd_competencies=jd_assessment.get("competencies", []) if isinstance(jd_assessment, dict) else []
             )
         
         # Mark bullets as used
@@ -285,17 +302,19 @@ class BulletLibraryManager:
         """Calculate how relevant a bullet is to the JD"""
         score = 0.0
         
-        bullet_lower = bullet_text.lower()
+        bullet_lower = (bullet_text or "").lower()
         
         # Score based on competency match
-        for jd_comp in jd_competencies:
-            if jd_comp["name"] == competency:
+        for jd_comp in (jd_competencies or []):
+            if not isinstance(jd_comp, dict):
+                continue
+            if jd_comp.get("name") == competency:
                 # High relevance if competency matches
                 score += 50
                 
                 # Additional score for keyword matches
                 for keyword in jd_comp.get("keywords_found", []):
-                    if keyword in bullet_lower:
+                    if keyword and str(keyword).lower() in bullet_lower:
                         score += 5
                 
                 break
@@ -307,11 +326,11 @@ class BulletLibraryManager:
             
             # Check for stage-appropriate verbs and keywords
             for verb in stage_dict.get("verbs", []):
-                if verb in bullet_lower:
+                if verb and str(verb).lower() in bullet_lower:
                     score += 3
             
             for keyword in stage_dict.get("keywords", []):
-                if keyword in bullet_lower:
+                if keyword and str(keyword).lower() in bullet_lower:
                     score += 2
         
         return min(100.0, score)
@@ -337,8 +356,8 @@ class BulletLibraryManager:
         # Distribute according to pattern (e.g., [3, 3, 3, 2, 2])
         for count in distribution:
             # Pick from top competency if available
-            if jd_competencies:
-                top_comp = jd_competencies[0]["name"]
+            if jd_competencies and isinstance(jd_competencies[0], dict):
+                top_comp = jd_competencies[0].get("name", "general")
                 if top_comp in bullets_by_comp and bullets_by_comp[top_comp]:
                     selected.extend(bullets_by_comp[top_comp][:count])
                     bullets_by_comp[top_comp] = bullets_by_comp[top_comp][count:]
