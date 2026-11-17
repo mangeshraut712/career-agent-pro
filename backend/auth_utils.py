@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from typing import Optional
 
+import bcrypt
 import jwt
 from passlib.context import CryptContext
 
@@ -20,12 +21,25 @@ def get_signing_key() -> str:
     return key
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a bcrypt hash, falling back to pwd_context."""
+    if not plain_password or not hashed_password:
+        return False
+    try:
+        pw_bytes = plain_password.encode("utf-8")[:72]
+        return bcrypt.checkpw(pw_bytes, hashed_password.encode("utf-8"))
+    except Exception:
+        try:
+            return pwd_context.verify(plain_password, hashed_password)
+        except Exception:
+            return False
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    """Hash password using bcrypt with 72-byte truncation."""
+    pw_bytes = (password or "").encode("utf-8")[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
