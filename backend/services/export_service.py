@@ -2,11 +2,27 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional, Union
-from docx import Document
-from fpdf import FPDF
+from typing import Any, Optional, Union
+
+try:
+    from docx import Document
+except ImportError:
+    Document = None
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    FPDF = None
+
 from schemas import ResumeData, ResumeExportData
-from slugify import slugify
+try:
+    from slugify import slugify
+except ImportError:
+    import re
+
+    def slugify(text: str) -> str:
+        text = re.sub(r"[^\w\s-]", "", str(text or "")).strip().lower()
+        return re.sub(r"[-\s]+", "-", text)
 
 logger = logging.getLogger(__name__)
 

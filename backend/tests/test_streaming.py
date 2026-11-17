@@ -8,6 +8,8 @@ import json
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 
+pytest.importorskip("sse_starlette")
+
 from fastapi.testclient import TestClient
 from main import app
 from tests.conftest import collect_route_paths

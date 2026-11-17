@@ -2,7 +2,10 @@
 import io
 import logging
 
-import docx
+try:
+    import docx
+except ImportError:
+    docx = None
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -52,6 +55,8 @@ class ResumeParser:
     @staticmethod
     def extract_text_from_docx(file_bytes: bytes) -> str:
         """Extract text from DOCX file."""
+        if docx is None:
+            raise ResumeUploadError("DOCX parsing requires python-docx to be installed")
         text = ""
         try:
             doc = docx.Document(io.BytesIO(file_bytes))

@@ -8,6 +8,8 @@ import json
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
+pytest.importorskip("langchain_core")
+
 from services.langchain_service import (
     JobFitAnalysis,
     ResumeTailoring,
