@@ -456,7 +456,7 @@ class BulletValidator:
             Tuple of (fixed_bullet, list_of_changes_made)
         """
         changes = []
-        fixed = bullet.copy(deep=True)
+        fixed = bullet.model_copy(deep=True) if hasattr(bullet, "model_copy") else bullet.copy(deep=True)
         
         # Fix 1: Trim if too long
         full_text = cls._assemble_bullet(fixed)
@@ -475,11 +475,14 @@ class BulletValidator:
                     changes.append("Trimmed impact to fit character limit")
         
         # Fix 2: Suggest strong verb
-        if fixed.action and fixed.action.lower().split()[0] in cls.WEAK_VERBS:
-            suggested = cls._suggest_strong_verb(fixed.action)
-            original = fixed.action
-            # Don't auto-replace, just suggest
-            changes.append(f"Suggestion: Replace '{original}' with '{suggested}'")
+        if fixed.action:
+            action_lower = fixed.action.lower().strip()
+            first_word = action_lower.split()[0] if action_lower else ""
+            if first_word in cls.WEAK_VERBS or any(action_lower.startswith(wv) for wv in cls.WEAK_VERBS):
+                suggested = cls._suggest_strong_verb(fixed.action)
+                original = fixed.action
+                # Don't auto-replace, just suggest
+                changes.append(f"Suggestion: Replace '{original}' with '{suggested}'")
         
         return fixed, changes
 
