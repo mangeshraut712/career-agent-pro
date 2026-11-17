@@ -33,14 +33,16 @@ class CoverLetterService:
     @classmethod
     async def generate(
         cls,
-        job_data: Dict[str, Any],
-        resume_data: Dict[str, Any],
+        job_data: Optional[Dict[str, Any]] = None,
+        resume_data: Optional[Dict[str, Any]] = None,
         template_type: str = "minimalist",
         company_hook: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a cover letter using the 4-paragraph framework."""
+        safe_job = job_data or {}
+        safe_resume = resume_data or {}
         
-        prompt = cls._build_prompt(job_data, resume_data, template_type, company_hook)
+        prompt = cls._build_prompt(safe_job, safe_resume, template_type, company_hook)
         
         try:
             ai_service = AIService()
@@ -51,7 +53,7 @@ class CoverLetterService:
             
             return {
                 "content": content,
-                "template": template_type,
+                "template": template_type if template_type in cls.TEMPLATES else "minimalist",
                 "structure": "Hook -> Value -> Alignment -> CTA",
                 "rules": [
                     "8-12 lines total",
@@ -66,13 +68,22 @@ class CoverLetterService:
     @classmethod
     def _build_prompt(
         cls,
-        job_data: Dict[str, Any],
-        resume_data: Dict[str, Any],
+        job_data: Optional[Dict[str, Any]],
+        resume_data: Optional[Dict[str, Any]],
         template_type: str,
         company_hook: Optional[str]
     ) -> str:
         """Build the AI prompt for cover letter generation."""
         template = cls.TEMPLATES.get(template_type, cls.TEMPLATES["minimalist"])
+        safe_job = job_data or {}
+        safe_resume = resume_data or {}
+
+        raw_desc = safe_job.get('description') or ''
+        trimmed_desc = str(raw_desc)[:500]
+
+        raw_exp = safe_resume.get('experience')
+        exp_list = raw_exp if isinstance(raw_exp, list) else []
+        top_achievements = str(exp_list[:2])
         
         return f"""
         You are an expert Career Agent. Create a high-converting cover letter based on Aakash Gupta's methodology.
@@ -92,14 +103,14 @@ class CoverLetterService:
         - Tone: Professional, personable, and confident.
         
         CONTEXT:
-        Job Title: {job_data.get('title')}
-        Company: {job_data.get('company')}
-        Job Requirements: {job_data.get('description', '')[:500]}
+        Job Title: {safe_job.get('title', 'Senior Product Manager')}
+        Company: {safe_job.get('company', 'Target Company')}
+        Job Requirements: {trimmed_desc}
         Company Research/Hook: {company_hook if company_hook else 'General company growth and mission'}
         
         CANDIDATE DATA:
-        Name: {resume_data.get('name')}
-        Top Achievements: {str(resume_data.get('experience', [])[:2])}
+        Name: {safe_resume.get('name', 'Candidate')}
+        Top Achievements: {top_achievements}
         
         TEMPLATE STYLE: {template['name']} ({template['description']})
         
@@ -107,8 +118,10 @@ class CoverLetterService:
         """
 
     @classmethod
-    def _clean_content(cls, content: str) -> str:
+    def _clean_content(cls, content: Optional[str]) -> str:
         """Remove AI prefixes or suffixes."""
+        if not content:
+            return ""
         # Remove common AI prefixes
         prefixes = ["Here is a cover letter", "Sure, here is", "Cover letter:", "Subject:"]
         lines = content.strip().split('\n')
