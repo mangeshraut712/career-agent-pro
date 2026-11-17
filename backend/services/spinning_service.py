@@ -139,8 +139,8 @@ class SpinningStrategy:
         Returns:
             Dict with spun text, changes, and explanation
         """
-        original = text
-        spun = text
+        original = text or ""
+        spun = text or ""
         changes = []
         
         # Get target dictionary
@@ -202,7 +202,7 @@ class SpinningStrategy:
         Returns:
             Recommended company stage
         """
-        jd_lower = job_description.lower()
+        jd_lower = (job_description or "").lower()
         
         # Score each stage
         scores = {
