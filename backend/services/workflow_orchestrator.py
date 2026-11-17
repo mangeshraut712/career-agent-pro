@@ -13,7 +13,10 @@ from services.bullet_library import BulletLibrary
 from services.verification_service import ResumeVerifier, CoverLetterVerifier, OutreachVerifier, VerificationStatus
 from services.cover_letter_service import CoverLetterService
 from services.outreach_service import OutreachCreator
-from services.export_service import ExportService
+try:
+    from services.export_service import ExportService
+except ImportError:
+    ExportService = None
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,9 @@ class ApplicationOrchestrator:
     ) -> Dict[str, Any]:
         """Runs the complete application pipeline autonomously."""
         options = options or {}
+        resume_data = dict(resume_data or {})
+        bullet_library = list(bullet_library or [])
+        job_description = str(job_description or "")
         results = {
             "timestamp": datetime.now().isoformat(),
             "status": "in_progress",
