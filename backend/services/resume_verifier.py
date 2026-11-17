@@ -21,8 +21,8 @@ class ResumeVerifier:
     @classmethod
     def verify_resume(
         cls,
-        resume: ResumeData,
-        bullets: List[SixPointBullet] = None,
+        resume: Optional[ResumeData] = None,
+        bullets: Optional[List[SixPointBullet]] = None,
         strict_mode: bool = False
     ) -> Dict:
         """
@@ -36,6 +36,38 @@ class ResumeVerifier:
         Returns:
             Dict with verification results and quality report
         """
+        if resume is None:
+            return {
+                "overall_pass": False,
+                "overall_quality_score": 0,
+                "can_export": False,
+                "bullet_validation": [],
+                "profile_validation": {
+                    "score": 0,
+                    "errors": ["Resume data is required"],
+                    "warnings": [],
+                    "completeness": {
+                        "percentage": 0,
+                        "completed_fields": 0,
+                        "total_fields": 9,
+                        "missing_fields": ["name", "email", "phone", "linkedin", "summary", "experience", "education", "skills", "projects"]
+                    }
+                },
+                "errors": ["Resume data is required"],
+                "warnings": [],
+                "suggestions": ["Provide resume profile data with name, email, and experience"],
+                "quality_report": {
+                    "overall_score": 0,
+                    "quality_level": "Needs Improvement",
+                    "quality_emoji": "❌",
+                    "can_export": False,
+                    "profile_score": 0,
+                    "profile_completeness": 0,
+                    "bullet_stats": None,
+                    "summary": "Resume needs significant improvement before submission. Address errors and warnings."
+                }
+            }
+
         results = {
             "overall_pass": False,
             "overall_quality_score": 0,
@@ -61,6 +93,8 @@ class ResumeVerifier:
         bullet_scores = []
         if bullets:
             for i, bullet in enumerate(bullets):
+                if bullet is None:
+                    continue
                 validation = BulletValidator.validate_bullet(bullet)
                 
                 results["bullet_validation"].append({
@@ -171,6 +205,11 @@ class ResumeVerifier:
         else:
             # Check experience quality
             for i, exp in enumerate(resume.experience):
+                if not isinstance(exp, dict):
+                    warnings.append(f"Experience {i+1}: Invalid experience record")
+                    score -= 5
+                    continue
+
                 if not exp.get("company"):
                     warnings.append(f"Experience {i+1}: Missing company name")
                     score -= 3
@@ -179,7 +218,8 @@ class ResumeVerifier:
                     warnings.append(f"Experience {i+1}: Missing role/title")
                     score -= 3
                 
-                if not exp.get("description") or len(exp.get("description", "")) < 20:
+                desc = exp.get("description")
+                if not desc or len(str(desc)) < 20:
                     warnings.append(f"Experience {i+1}: Description too brief")
                     score -= 5
         
