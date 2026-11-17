@@ -25,8 +25,10 @@ def term_in_text(text: str, term: str) -> bool:
 
     "java" does not match "javascript", and "ship" does not match "relationship".
     """
-    haystack = text.lower() if text else ""
-    needle = term.strip().lower()
+    if not text or not term:
+        return False
+    haystack = text.lower()
+    needle = str(term).strip().lower()
     if not haystack or not needle:
         return False
     return _term_pattern(needle).search(haystack) is not None
@@ -155,7 +157,7 @@ class JDAssessor:
         Analyze JD to determine which Tier 1/2 skills should be prioritized.
         Based on Apply-Pilot's Skills Section Intelligence Framework.
         """
-        jd_lower = job_description.lower()
+        jd_lower = (job_description or "").lower()
         
         prioritized_tier_1 = [s for s in cls.SKILLS_INTELLIGENCE["tier_1"] if term_in_text(jd_lower, s)]
         
@@ -197,7 +199,8 @@ class JDAssessor:
         """
         Assess candidate fit against job description.
         """
-        jd_lower = job_description.lower()
+        jd_lower = (job_description or "").lower()
+        resume_data = resume_data or {}
         competencies = custom_competencies or cls.COMPETENCY_AREAS
         
         # Extract candidate skills and experience
@@ -270,6 +273,7 @@ class JDAssessor:
     @classmethod
     def _extract_candidate_skills(cls, resume_data: Dict[str, Any]) -> List[str]:
         """Extract skills from resume."""
+        resume_data = resume_data or {}
         skills = resume_data.get("skills", [])
         if isinstance(skills, str):
             skills = [s.strip().lower() for s in skills.split(",")]
@@ -280,6 +284,7 @@ class JDAssessor:
     @classmethod
     def _extract_experience_text(cls, resume_data: Dict[str, Any]) -> str:
         """Extract all experience text for keyword matching."""
+        resume_data = resume_data or {}
         text_parts = []
         
         for exp in resume_data.get("experience", []):
