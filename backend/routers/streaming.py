@@ -22,7 +22,10 @@ import logging
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Query
-from sse_starlette.sse import EventSourceResponse
+try:
+    from sse_starlette.sse import EventSourceResponse
+except ImportError:
+    EventSourceResponse = None
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)

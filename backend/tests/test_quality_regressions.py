@@ -7,7 +7,12 @@ from urllib.parse import urlparse
 
 import pytest
 from fastapi.testclient import TestClient
-from fpdf import FPDF
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    FPDF = None
+
 import jwt
 
 from auth_utils import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
@@ -192,6 +197,8 @@ class TestUploads:
         assert "completed" in response.text
 
     def test_pdf_page_limit(self):
+        if FPDF is None:
+            pytest.skip("fpdf is not installed")
         pdf = FPDF()
         pdf.set_font("Helvetica", size=12)
         for _ in range(31):
@@ -202,6 +209,8 @@ class TestUploads:
             ResumeParser.extract_text(payload, "long.pdf")
 
     def test_pdf_text_is_extracted(self):
+        if FPDF is None:
+            pytest.skip("fpdf is not installed")
         pdf = FPDF()
         pdf.set_font("Helvetica", size=12)
         pdf.add_page()
@@ -248,6 +257,8 @@ class TestExportSafety:
         assert "🚀" not in pdf_text("José 🚀", False)
 
     def test_pdf_export_accepts_unicode_names(self, tmp_path):
+        if FPDF is None:
+            pytest.skip("fpdf is not installed")
         output = tmp_path / "resume.pdf"
         ExportService.to_pdf(_resume_model(), str(output))
         data = output.read_bytes()
@@ -260,6 +271,8 @@ class TestExportSafety:
         assert safe_download_name("a/../../b", "docx").endswith("_resume.docx")
 
     def test_pdf_response_sanitizes_filename_and_deletes_temp(self, monkeypatch):
+        if FPDF is None:
+            pytest.skip("fpdf is not installed")
         removed = []
         original = __import__("os").remove
 

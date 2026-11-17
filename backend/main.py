@@ -55,13 +55,19 @@ from services.competency_assessor import CompetencyAssessor
 from services.spinning_service import SpinningStrategy
 from services.resume_verifier import ResumeVerifier as QualityResumeVerifier
 from services.bullet_library_manager import BulletLibraryManager
-# LangChain service layer
-from services.langchain_service import (
-    analyze_job_fit as langchain_analyze_job_fit,
-    tailor_resume as langchain_tailor_resume,
-    generate_cover_letter_langchain,
-    run_full_pipeline as langchain_full_pipeline,
-)
+# LangChain service layer (optional dependency)
+try:
+    from services.langchain_service import (
+        analyze_job_fit as langchain_analyze_job_fit,
+        tailor_resume as langchain_tailor_resume,
+        generate_cover_letter_langchain,
+        run_full_pipeline as langchain_full_pipeline,
+    )
+except ImportError:
+    langchain_analyze_job_fit = None
+    langchain_tailor_resume = None
+    generate_cover_letter_langchain = None
+    langchain_full_pipeline = None
 # Streaming router
 from routers.streaming import router as streaming_router
 
@@ -1111,6 +1117,8 @@ async def langchain_analyze_fit_endpoint(data: dict = Body(...)):
     Job fit analysis via LangChain chains.
     Uses structured output parsing for reliable JSON responses.
     """
+    if langchain_analyze_job_fit is None:
+        raise HTTPException(status_code=501, detail="LangChain service is not installed")
     try:
         job_description = data.get("job_description", "")
         resume_data = data.get("resume_data", {})
@@ -1134,6 +1142,8 @@ async def langchain_tailor_resume_endpoint(data: dict = Body(...)):
     Resume tailoring via LangChain chains.
     Structured output: summary, skills, experience suggestions, keywords.
     """
+    if langchain_tailor_resume is None:
+        raise HTTPException(status_code=501, detail="LangChain service is not installed")
     try:
         job_description = data.get("job_description", "")
         resume_data = data.get("resume_data", {})
@@ -1156,6 +1166,8 @@ async def langchain_cover_letter_endpoint(data: dict = Body(...)):
     """
     Cover letter generation via LangChain chains.
     """
+    if generate_cover_letter_langchain is None:
+        raise HTTPException(status_code=501, detail="LangChain service is not installed")
     try:
         job_description = data.get("job_description", "")
         resume_data = data.get("resume_data", {})
@@ -1182,6 +1194,8 @@ async def langchain_full_pipeline_endpoint(data: dict = Body(...)):
     Full sequential pipeline: fit analysis → resume tailoring → cover letter.
     Demonstrates LangChain chain composition for complex workflows.
     """
+    if langchain_full_pipeline is None:
+        raise HTTPException(status_code=501, detail="LangChain service is not installed")
     try:
         job_description = data.get("job_description", "")
         resume_data = data.get("resume_data", {})
