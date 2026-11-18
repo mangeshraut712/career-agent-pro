@@ -7,6 +7,8 @@ fixed messages so exception text cannot leak secrets.
 from __future__ import annotations
 
 import os
+import unicodedata
+from urllib.parse import urlsplit
 
 from fastapi import UploadFile
 
@@ -45,18 +47,29 @@ def docs_enabled() -> bool:
 
 
 def resolve_cors_origins(raw: str | None = None) -> list[str]:
-    """Return an explicit origin allowlist. `*` is never accepted."""
+    """Return an explicit origin allowlist. `*` and path/credential URLs are rejected."""
     source = os.getenv("CORS_ORIGINS", "") if raw is None else raw
     if not source.strip():
         return list(DEFAULT_CORS_ORIGINS)
 
     origins: list[str] = []
     for part in source.split(","):
-        origin = part.strip().rstrip("/")
-        if not origin or origin == "*":
+        candidate = part.strip().rstrip("/")
+        if not candidate or candidate == "*":
             continue
-        if origin.startswith("https://") or origin.startswith("http://"):
-            origins.append(origin)
+        parsed = urlsplit(candidate)
+        if (
+            parsed.scheme in {"http", "https"}
+            and parsed.hostname
+            and parsed.username is None
+            and parsed.password is None
+            and parsed.path in {"", "/"}
+            and not parsed.query
+            and not parsed.fragment
+        ):
+            normalized = f"{parsed.scheme}://{parsed.netloc.lower()}"
+            if normalized not in origins:
+                origins.append(normalized)
     return origins or list(DEFAULT_CORS_ORIGINS)
 
 
@@ -118,12 +131,13 @@ def body_size_status(content_length: str | None, limit: int = MAX_REQUEST_BYTES)
 
 
 def safe_download_name(name: str, extension: str) -> str:
-    """Build a Content-Disposition filename without header or path characters."""
+    """Build an ASCII Content-Disposition filename without header or path characters."""
+    normalized = unicodedata.normalize("NFKD", name or "")
     cleaned: list[str] = []
-    for char in name or "":
-        if char.isalnum() or char in {" ", "-", "_"}:
+    for char in normalized:
+        if char.isascii() and (char.isalnum() or char in {" ", "-", "_"}):
             cleaned.append(char)
-        else:
+        elif not unicodedata.combining(char):
             cleaned.append(" ")
     collapsed = "_".join("".join(cleaned).split())
     stem = collapsed[:80] or "resume"

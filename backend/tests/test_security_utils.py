@@ -1,7 +1,10 @@
+import asyncio
+import io
 import pytest
 from security_utils import (
     body_size_status,
     docs_enabled,
+    read_limited_upload,
     resolve_cors_origins,
     resume_extension,
     safe_download_name,
@@ -101,3 +104,31 @@ def test_safe_download_name():
 
     # Empty name defaults to resume
     assert safe_download_name("", "pdf") == "resume_resume.pdf"
+
+    # Non-ASCII names normalize safely to ASCII for HTTP Content-Disposition headers
+    assert safe_download_name("José García", "pdf") == "Jose_Garcia_resume.pdf"
+    assert safe_download_name("मंगेश राऊत", "docx") == "resume_resume.docx"
+
+
+def test_resolve_cors_origins_rejects_paths_queries_and_credentials():
+    raw = "https://APP.EXAMPLE.COM/, https://evil.com/path, https://user:pw@ok.com, https://valid.dev?x=1, http://"
+    assert resolve_cors_origins(raw) == ["https://app.example.com"]
+
+
+def test_read_limited_upload_enforces_empty_and_size_bounds():
+    class DummyUpload:
+        def __init__(self, data: bytes):
+            self._buf = io.BytesIO(data)
+
+        async def read(self, size: int = -1) -> bytes:
+            return self._buf.read(size)
+
+    assert asyncio.run(read_limited_upload(DummyUpload(b"resume body"), max_bytes=20)) == b"resume body"
+
+    with pytest.raises(ResumeUploadError, match="empty") as exc_empty:
+        asyncio.run(read_limited_upload(DummyUpload(b""), max_bytes=20))
+    assert exc_empty.value.status_code == 400
+
+    with pytest.raises(ResumeUploadError, match="limit") as exc_over:
+        asyncio.run(read_limited_upload(DummyUpload(b"x" * 21), max_bytes=20))
+    assert exc_over.value.status_code == 413
