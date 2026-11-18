@@ -93,7 +93,7 @@ class ExportService:
         """Creates an organized path: storage/exports/YYYY-MM-DD/job-title/"""
         try:
             date_str = datetime.now().strftime("%Y-%m-%d")
-            slug_title = slugify(job_title or "general")
+            slug_title = slugify(job_title or "general") or "general"
             path = os.path.join(base_dir, date_str, slug_title)
             os.makedirs(path, exist_ok=True)
             return path
@@ -105,18 +105,16 @@ class ExportService:
     def to_docx(resume: Union[ResumeData, ResumeExportData], output_path: str) -> str:
         """Export resume to DOCX format."""
         try:
-            if not resume.name:
+            if not resume.name or not resume.name.strip():
                 raise ValueError("Resume name is required")
+            if Document is None:
+                raise RuntimeError("DOCX export requires python-docx to be installed")
             
             doc = Document()
             doc.add_heading(resume.name, 0)
             
             # Contact information
-            contact_parts = [resume.email]
-            if resume.phone:
-                contact_parts.append(resume.phone)
-            if resume.linkedin:
-                contact_parts.append(resume.linkedin)
+            contact_parts = [p for p in (resume.email, resume.phone, resume.linkedin) if p]
             
             if contact_parts:
                 p = doc.add_paragraph()
@@ -180,8 +178,10 @@ class ExportService:
     def to_pdf(resume: Union[ResumeData, ResumeExportData], output_path: str) -> str:
         """Export resume to PDF format."""
         try:
-            if not resume.name:
+            if not resume.name or not resume.name.strip():
                 raise ValueError("Resume name is required")
+            if FPDF is None:
+                raise RuntimeError("PDF export requires fpdf2 to be installed")
             
             pdf = FPDF()
             pdf.add_page()
@@ -202,11 +202,7 @@ class ExportService:
             _line(bold, 16, resume.name, 10, align="C")
             
             # Contact information
-            contact_parts = [resume.email]
-            if resume.phone:
-                contact_parts.append(resume.phone)
-            if resume.linkedin:
-                contact_parts.append(resume.linkedin)
+            contact_parts = [p for p in (resume.email, resume.phone, resume.linkedin) if p]
             
             if contact_parts:
                 _line(italic, 10, " | ".join(contact_parts), 8, align="C")
@@ -267,10 +263,10 @@ class ExportService:
             raise
 
     @staticmethod
-    def to_latex(resume: ResumeData) -> str:
+    def to_latex(resume: Union[ResumeData, ResumeExportData]) -> str:
         """Export resume to LaTeX format."""
         try:
-            if not resume.name:
+            if not resume.name or not resume.name.strip():
                 raise ValueError("Resume name is required")
             
             name_parts = resume.name.split()
@@ -305,8 +301,9 @@ class ExportService:
             # Experience
             if resume.experience:
                 latex += r"\section{Experience}" + "\n"
-                for exp in resume.experience:
-                    if not isinstance(exp, dict):
+                for experience in resume.experience:
+                    exp = _export_mapping(experience)
+                    if exp is None:
                         continue
                     duration = escape_latex(exp.get('duration', ''))
                     role = escape_latex(exp.get('role', ''))
@@ -318,8 +315,9 @@ class ExportService:
             # Education
             if resume.education:
                 latex += r"\section{Education}" + "\n"
-                for edu in resume.education:
-                    if not isinstance(edu, dict):
+                for education in resume.education:
+                    edu = _export_mapping(education)
+                    if edu is None:
                         continue
                     year = escape_latex(str(edu.get('graduation_year', '')))
                     degree = escape_latex(edu.get('degree', ''))
