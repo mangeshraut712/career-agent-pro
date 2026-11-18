@@ -37,6 +37,15 @@ def test_password_hashing_and_verification():
     assert hashed != plain
     assert verify_password(plain, hashed) is True
     assert verify_password("WrongPassword123!", hashed) is False
+    assert verify_password("", hashed) is False
+    assert verify_password("SuperSecret123!\x00extra", hashed) is False
+
+
+def test_password_hashing_rejects_empty_and_nul_bytes():
+    with pytest.raises(ValueError, match="non-empty"):
+        get_password_hash("")
+    with pytest.raises(ValueError, match="NUL"):
+        get_password_hash("valid-prefix\x00injected")
 
 
 def test_create_access_token_default_lifetime(monkeypatch):
