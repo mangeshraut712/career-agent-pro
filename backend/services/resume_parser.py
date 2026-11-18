@@ -6,8 +6,15 @@ try:
     import docx
 except ImportError:
     docx = None
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
+
+try:
+    from pypdf import PdfReader
+    from pypdf.errors import PdfReadError
+except ImportError:
+    PdfReader = None
+
+    class PdfReadError(Exception):
+        """Fallback error class when pypdf is not installed."""
 
 from security_utils import MAX_EXTRACTED_CHARS, MAX_PDF_PAGES, ResumeUploadError, validate_resume_filename
 
@@ -20,6 +27,8 @@ class ResumeParser:
     @staticmethod
     def extract_text_from_pdf(file_bytes: bytes) -> str:
         """Extract text from PDF file."""
+        if PdfReader is None:
+            raise ResumeUploadError("PDF parsing requires pypdf to be installed")
         text = ""
         try:
             reader = PdfReader(io.BytesIO(file_bytes))
