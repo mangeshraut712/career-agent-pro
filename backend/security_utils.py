@@ -57,7 +57,11 @@ def resolve_cors_origins(raw: str | None = None) -> list[str]:
         candidate = part.strip().rstrip("/")
         if not candidate or candidate == "*":
             continue
-        parsed = urlsplit(candidate)
+        try:
+            parsed = urlsplit(candidate)
+            _ = parsed.port
+        except ValueError:
+            continue
         if (
             parsed.scheme in {"http", "https"}
             and parsed.hostname

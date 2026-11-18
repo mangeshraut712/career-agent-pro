@@ -111,8 +111,18 @@ def test_safe_download_name():
 
 
 def test_resolve_cors_origins_rejects_paths_queries_and_credentials():
-    raw = "https://APP.EXAMPLE.COM/, https://evil.com/path, https://user:pw@ok.com, https://valid.dev?x=1, http://"
-    assert resolve_cors_origins(raw) == ["https://app.example.com"]
+    raw = (
+        "https://APP.EXAMPLE.COM/, "
+        "http://[::1]:3000, "
+        "http://[::1, "
+        "https://badport.example.com:notaport, "
+        "https://range.example.com:99999, "
+        "https://evil.com/path, "
+        "https://user:pw@ok.com, "
+        "https://valid.dev?x=1, "
+        "http://"
+    )
+    assert resolve_cors_origins(raw) == ["https://app.example.com", "http://[::1]:3000"]
 
 
 def test_read_limited_upload_enforces_empty_and_size_bounds():
