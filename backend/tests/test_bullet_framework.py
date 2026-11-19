@@ -68,3 +68,11 @@ def test_get_spinning_keywords():
 
     enterprise_kw = BulletFramework.get_spinning_keywords(CompanyStage.ENTERPRISE)
     assert "Fortune 500" in enterprise_kw or "governance" in enterprise_kw
+
+
+def test_validate_bullet_batch_handles_an_empty_batch():
+    """An empty batch reports zeros instead of raising ZeroDivisionError."""
+    stats = BulletFramework.validate_bullet_batch([])
+    assert stats["total_bullets"] == 0
+    assert stats["average_score"] == 0
+    assert set(stats["framework_compliance"].values()) == {0}

@@ -424,14 +424,20 @@ class BulletFramework:
         analyses = [cls.analyze_bullet(b) for b in bullets]
         
         total_score = sum(a.score for a in analyses) / len(analyses) if analyses else 0
-        
+
+        def share(flag: str) -> float:
+            # An empty batch has no compliant bullets; avoid dividing by zero.
+            if not analyses:
+                return 0
+            return sum(1 for a in analyses if getattr(a, flag)) / len(analyses) * 100
+
         framework_compliance = {
-            "action": sum(1 for a in analyses if a.has_action) / len(analyses) * 100,
-            "context": sum(1 for a in analyses if a.has_context) / len(analyses) * 100,
-            "method": sum(1 for a in analyses if a.has_method) / len(analyses) * 100,
-            "result": sum(1 for a in analyses if a.has_result) / len(analyses) * 100,
-            "impact": sum(1 for a in analyses if a.has_impact) / len(analyses) * 100,
-            "business_outcome": sum(1 for a in analyses if a.has_business_outcome) / len(analyses) * 100
+            "action": share("has_action"),
+            "context": share("has_context"),
+            "method": share("has_method"),
+            "result": share("has_result"),
+            "impact": share("has_impact"),
+            "business_outcome": share("has_business_outcome"),
         }
         
         char_distribution = {
