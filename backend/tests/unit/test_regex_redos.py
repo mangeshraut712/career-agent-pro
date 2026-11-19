@@ -41,5 +41,12 @@ def test_summary_metric_pattern_keeps_existing_matches():
         assert not _has_summary_metric(text), text
 
 
+def test_summary_metric_ignores_numbers_before_ordinary_words():
+    for text in ("Led a team of 5 members", "Mentored 3 backend engineers", "Ran 2 marathons"):
+        assert not _has_summary_metric(text), text
+    for text in ("Served 5M+ users", "Built a 2 billion row pipeline", "Hit 10k."):
+        assert _has_summary_metric(text), text
+
+
 def test_summary_metric_pattern_is_linear_on_long_digit_runs():
     assert _elapsed(_has_summary_metric, "9" * 50_000 + "x") < 0.5

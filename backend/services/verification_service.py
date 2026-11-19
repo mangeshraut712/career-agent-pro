@@ -29,7 +29,12 @@ def _has_summary_metric(summary: str) -> bool:
             end += 1
         # lower() also folds KELVIN SIGN to "k", as re.IGNORECASE did.
         if end < len(summary) and summary[end].lower() in ("k", "m", "b"):
-            return True
+            # "5k users" or "3M ARR", but not "5 members" or "2 backend teams"
+            after = end + 1
+            if after >= len(summary) or not (summary[after].isalnum() or summary[after] == "_"):
+                return True
+            if summary[end:end + 8].lower().startswith(("million", "billion")):
+                return True
     return False
 
 
