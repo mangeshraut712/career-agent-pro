@@ -71,3 +71,19 @@ def test_calculate_fit_score_empty_profile():
     for cs in fit["competency_scores"]:
         assert cs["your_score"] == 0
         assert cs["gap"] == 100
+
+
+def test_short_keywords_do_not_match_inside_other_words():
+    jd_text = "Build guides quickly and rapidly, with the ability to combine capital plans."
+    names = [c["name"] for c in CompetencyAssessor._extract_competencies(jd_text.lower())]
+    assert "User Research & Design" not in names  # "ui" in "build"/"guides"
+    assert "Data & Analytics" not in names  # "bi" in "ability"/"combine"
+    assert "Technical Skills" not in names  # "api" in "rapidly"/"capital"
+
+
+def test_whole_keywords_and_plurals_still_count():
+    competencies = CompetencyAssessor._extract_competencies("own the ui and two apis for the teams")
+    by_name = {c["name"]: c for c in competencies}
+    assert "ui" in by_name["User Research & Design"]["keywords_found"]
+    assert "api" in by_name["Technical Skills"]["keywords_found"]
+    assert "team" in by_name["Leadership & Team"]["keywords_found"]

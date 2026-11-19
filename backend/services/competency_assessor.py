@@ -9,6 +9,8 @@ import re
 from typing import Dict, List, Tuple, Optional
 from collections import Counter
 
+from services.jd_assessor import _term_pattern, term_in_text
+
 
 class CompetencyAssessor:
     """Analyzes JDs and extracts competencies with weightage"""
@@ -173,7 +175,7 @@ class CompetencyAssessor:
         for comp in jd_assessment.get("competencies", []):
             # Count matching keywords
             keywords = cls.COMPETENCY_KEYWORDS.get(comp["name"], [])
-            matches = sum(1 for kw in keywords if kw in user_text)
+            matches = sum(1 for kw in keywords if term_in_text(user_text, kw))
             total_keywords = len(keywords)
             
             if total_keywords > 0:
@@ -216,8 +218,9 @@ class CompetencyAssessor:
             found_keywords = []
             
             for keyword in keywords:
-                # Count occurrences
-                count = text.count(keyword)
+                # Count whole-term occurrences so "ui" does not match "build"
+                # and "api" does not match "rapidly".
+                count = len(_term_pattern(keyword).findall(text))
                 if count > 0:
                     score += count
                     found_keywords.append(keyword)
