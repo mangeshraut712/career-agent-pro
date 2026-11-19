@@ -19,6 +19,7 @@ import API_URL from "@/lib/api";
 import Link from "next/link";
 import { secureGet, secureSet } from "@/lib/secureStorage";
 import { STORAGE_KEYS } from "@/lib/storageKeys";
+import { upsertAnalyzedJob } from "@/lib/trackedJobs";
 import { JobScanner } from "@/components/jobs/JobScanner";
 import { AnalysisResult } from "@/components/jobs/AnalysisResult";
 import { calculateMatchScore } from "@/lib/matchScore";
@@ -173,10 +174,7 @@ export default function AnalyzeJobPage() {
 
   const saveCurrentJob = () => {
     if (!currentJob) return;
-    const updatedJobs = [
-      currentJob,
-      ...savedJobs.filter((j) => j.url !== currentJob.url),
-    ];
+    const updatedJobs = upsertAnalyzedJob(savedJobs, currentJob);
     setSavedJobs(updatedJobs);
     secureSet(STORAGE_KEYS.ANALYZED_JOBS, updatedJobs);
     secureSet(STORAGE_KEYS.CURRENT_JOB_FOR_RESUME, currentJob);

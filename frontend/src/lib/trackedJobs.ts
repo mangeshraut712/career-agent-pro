@@ -70,6 +70,24 @@ export function updateStoredJobStatus<T extends StoredAnalyzedJob>(
   return jobs.map((job) => (job.id === jobId ? { ...job, status } : job));
 }
 
+/**
+ * Put a freshly analyzed job at the top of the saved list, replacing any
+ * earlier record for the same URL. The tracker status (applied,
+ * interviewing, ...) belongs to the user, so a re-analysis keeps it.
+ */
+export function upsertAnalyzedJob<T extends { url?: string }>(
+  jobs: T[],
+  job: T,
+): T[] {
+  const previous = jobs.find((saved) => saved.url === job.url) as
+    (T & { status?: unknown }) | undefined;
+  const merged =
+    previous && isJobStatus(previous.status)
+      ? { ...job, status: previous.status }
+      : job;
+  return [merged, ...jobs.filter((saved) => saved.url !== job.url)];
+}
+
 export function removeStoredJob<T extends { id?: string }>(
   jobs: T[],
   jobId: string,

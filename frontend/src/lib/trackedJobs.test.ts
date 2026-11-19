@@ -3,6 +3,7 @@ import {
   removeStoredJob,
   toTrackedJob,
   updateStoredJobStatus,
+  upsertAnalyzedJob,
   withStableIds,
 } from "@/lib/trackedJobs";
 
@@ -50,5 +51,39 @@ describe("tracked job storage", () => {
     const updated = updateStoredJobStatus(stored, view.id, "offer");
     expect(updated[0].status).toBe("offer");
     expect(updated[0].description).toBe("Keep me");
+  });
+});
+
+describe("upsertAnalyzedJob", () => {
+  it("keeps the tracker status when the same URL is analyzed again", () => {
+    const jobs = [
+      {
+        id: "job-1",
+        url: "https://example.com/a",
+        title: "Old",
+        status: "applied",
+      },
+      { id: "job-2", url: "https://example.com/b", title: "Other" },
+    ];
+    const result = upsertAnalyzedJob(jobs, {
+      id: "job-3",
+      url: "https://example.com/a",
+      title: "Re-analyzed",
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      id: "job-3",
+      title: "Re-analyzed",
+      status: "applied",
+    });
+    expect(result[1].id).toBe("job-2");
+  });
+
+  it("adds a new job without inventing a status", () => {
+    const result = upsertAnalyzedJob([], {
+      id: "job-1",
+      url: "https://example.com/a",
+    });
+    expect(result).toEqual([{ id: "job-1", url: "https://example.com/a" }]);
   });
 });
