@@ -25,6 +25,7 @@ import { AppleButton } from "@/components/ui/AppleButton";
 import { useToast } from "@/components/ui/Toast";
 import axios from "axios";
 import API_URL from "@/lib/api";
+import { skillsMatch } from "@/lib/matchScore";
 import { exportResumeDocx, exportResumePdf } from "@/lib/resumeExport";
 import Link from "next/link";
 
@@ -167,14 +168,13 @@ export default function ResumesPage() {
       console.error("Enhancement error:", error);
       // Fallback simulation
       toast("AI unavailable. Engaging local heuristics.", "info");
-      const profileSkills = profile.skills?.map((s) => s.toLowerCase()) || [];
-      const jobSkills = currentJob.skills?.map((s) => s.toLowerCase()) || [];
+      const profileSkills = profile.skills || [];
+      const jobSkills = currentJob.skills || [];
       const matchedSkills = jobSkills.filter((skill) =>
-        profileSkills.some((ps) => ps.includes(skill) || skill.includes(ps)),
+        profileSkills.some((ps) => skillsMatch(ps, skill)),
       );
       const missingSkills = jobSkills.filter(
-        (skill) =>
-          !profileSkills.some((ps) => ps.includes(skill) || skill.includes(ps)),
+        (skill) => !profileSkills.some((ps) => skillsMatch(ps, skill)),
       );
       const localScore = Math.round(
         (matchedSkills.length / Math.max(jobSkills.length, 1)) * 85,
