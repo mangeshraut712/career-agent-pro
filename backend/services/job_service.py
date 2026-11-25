@@ -857,26 +857,33 @@ Return ONLY valid JSON with these fields:
         """Detect the job board source from URL using secure domain parsing"""
         try:
             parsed = urlparse(url)
-            host = parsed.netloc.lower()
+            # hostname drops userinfo and the port. netloc kept ":443", so
+            # boards.greenhouse.io:443 never matched a greenhouse host.
+            host = (parsed.hostname or "").lower().rstrip(".")
             domain = host[4:] if host.startswith("www.") else host
-            
-            if domain == "linkedin.com" or domain.endswith(".linkedin.com"):
+            if not domain:
+                return 'other'
+
+            def is_host(root: str) -> bool:
+                return domain == root or domain.endswith("." + root)
+
+            if is_host("linkedin.com"):
                 return 'linkedin'
-            elif domain == "indeed.com" or domain.endswith(".indeed.com"):
+            elif is_host("indeed.com"):
                 return 'indeed'
-            elif domain == "glassdoor.com" or domain.endswith(".glassdoor.com"):
+            elif is_host("glassdoor.com"):
                 return 'glassdoor'
-            elif domain == "lever.co" or domain.endswith(".lever.co"):
+            elif is_host("lever.co"):
                 return 'lever'
-            elif domain == "greenhouse.io" or domain.endswith(".boards.greenhouse.io"):
+            elif is_host("greenhouse.io"):
                 return 'greenhouse'
-            elif domain == "ashbyhq.com" or domain.endswith(".ashbyhq.com"):
+            elif is_host("ashbyhq.com"):
                 return 'ashby'
-            elif domain == "jobright.ai" or domain.endswith(".jobright.ai"):
+            elif is_host("jobright.ai"):
                 return 'jobright'
-            elif domain == "simplify.jobs" or domain.endswith(".simplify.jobs"):
+            elif is_host("simplify.jobs"):
                 return 'simplify'
-            elif domain in ["wellfound.com", "angel.co"] or domain.endswith(".wellfound.com"):
+            elif is_host("wellfound.com") or is_host("angel.co"):
                 return 'wellfound'
             else:
                 return 'other'
