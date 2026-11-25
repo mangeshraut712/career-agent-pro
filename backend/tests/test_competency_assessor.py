@@ -45,6 +45,10 @@ def test_detect_company_stage():
     assert CompetencyAssessor._detect_company_stage("series b scaling scale-up rapid growth") == "growth_stage"
     assert CompetencyAssessor._detect_company_stage("fortune 500 enterprise global established public company") == "enterprise"
     assert CompetencyAssessor._detect_company_stage("ordinary local shop") == "unknown"
+    assert CompetencyAssessor._detect_company_stage(
+        "Looking for a PM with 10-15 years experience"
+    ) == "unknown"
+    assert CompetencyAssessor._detect_company_stage("0-1 product builder") == "early_stage"
 
 
 def test_calculate_fit_score():
