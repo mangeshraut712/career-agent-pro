@@ -291,32 +291,40 @@ export default function ProfilePage() {
                   endDate: edu.graduation_year || edu.year || "",
                 }));
 
-                setProfile((prev) => ({
-                  ...prev,
-                  name: parsed.name || prev.name,
-                  title: parsed.jobTitle || parsed.title || prev.title,
-                  email: parsed.email || prev.email,
-                  phone: parsed.phone || prev.phone,
-                  location: parsed.location || prev.location,
-                  linkedin: parsed.linkedin || prev.linkedin,
-                  github: parsed.github || prev.github,
-                  portfolio:
-                    parsed.portfolio || parsed.website || prev.portfolio,
-                  skills: parsed.skills?.length ? parsed.skills : prev.skills,
-                  summary: parsed.summary || prev.summary,
-                  experience: mappedExperience.length
-                    ? mappedExperience
-                    : prev.experience,
-                  education: mappedEducation.length
-                    ? mappedEducation
-                    : prev.education,
-                  projects: (parsed.projects || []).map((p: ParsedProject) => ({
-                    id: generateId(),
-                    name: p.name || "",
-                    description: p.description || "",
-                  })),
-                  certifications: parsed.certifications || [],
-                }));
+                setProfile((prev) => {
+                  const next = {
+                    ...prev,
+                    name: parsed.name || prev.name,
+                    title: parsed.jobTitle || parsed.title || prev.title,
+                    email: parsed.email || prev.email,
+                    phone: parsed.phone || prev.phone,
+                    location: parsed.location || prev.location,
+                    linkedin: parsed.linkedin || prev.linkedin,
+                    github: parsed.github || prev.github,
+                    portfolio:
+                      parsed.portfolio || parsed.website || prev.portfolio,
+                    skills: parsed.skills?.length ? parsed.skills : prev.skills,
+                    summary: parsed.summary || prev.summary,
+                    experience: mappedExperience.length
+                      ? mappedExperience
+                      : prev.experience,
+                    education: mappedEducation.length
+                      ? mappedEducation
+                      : prev.education,
+                    projects: (parsed.projects || []).map(
+                      (p: ParsedProject) => ({
+                        id: generateId(),
+                        name: p.name || "",
+                        description: p.description || "",
+                      }),
+                    ),
+                    certifications: parsed.certifications || [],
+                  };
+                  // The success toast says the profile is synchronized.
+                  // setProfile alone is lost on refresh.
+                  secureSet("profile", next);
+                  return next;
+                });
                 toast("Profile Synchronization Complete!", "success");
               }
             } catch (e) {
