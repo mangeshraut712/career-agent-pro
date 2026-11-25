@@ -131,3 +131,22 @@ class TestLangChainEndpointRegistration:
     def test_langchain_full_pipeline(self):
         routes = collect_route_paths(app)
         assert "/langchain/full-pipeline" in routes
+
+
+class TestSpinTextEndpoint:
+    """The HTTP handler must use the spinner's CompanyStage, not the bullet enum."""
+
+    def test_spin_text_returns_stage_instead_of_500(self):
+        response = client.post(
+            "/spin-text",
+            json={
+                "text": "Led hospice care for families",
+                "targetStage": "growth_stage",
+            },
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["target_stage"] == "growth_stage"
+        assert isinstance(body["spun"], str)
+        assert body["spun"]
+        assert isinstance(body["changes"], list)

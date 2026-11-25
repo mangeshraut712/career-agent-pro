@@ -40,7 +40,7 @@ from services.export_service import ExportService
 from services.autofill_service import AutofillService
 from services.resume_parser import ResumeParser
 from services.bullet_framework import (
-    BulletFramework, CompanyStage, MetricDiversifier,
+    BulletFramework, MetricDiversifier,
     ActionVerbChecker, analyze_complete_resume
 )
 from services.bullet_library import BulletLibrary
@@ -52,7 +52,7 @@ from services.workflow_orchestrator import ApplicationOrchestrator
 # New quality framework services
 from services.bullet_validator import BulletValidator
 from services.competency_assessor import CompetencyAssessor
-from services.spinning_service import SpinningStrategy
+from services.spinning_service import CompanyStage, SpinningStrategy
 from services.resume_verifier import ResumeVerifier as QualityResumeVerifier
 from services.bullet_library_manager import BulletLibraryManager
 # LangChain service layer (optional dependency)
