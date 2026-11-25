@@ -62,6 +62,19 @@ def test_calculate_fit_score():
     assert "top_gaps" in fit
 
 
+def test_fit_score_uses_keywords_the_job_mentions():
+    assessment = CompetencyAssessor.assess_job_description("Python developer only.")
+    fit = CompetencyAssessor.calculate_fit_score(assessment, ["python"], [])
+
+    technical = next(
+        cs for cs in fit["competency_scores"] if cs["competency"] == "Technical Skills"
+    )
+    assert technical["matched_keywords"] == 1
+    assert technical["total_keywords"] == 1
+    assert technical["your_score"] == 100
+    assert fit["overall_fit"] == 100
+
+
 def test_calculate_fit_score_empty_profile():
     jd_text = "Technical role requiring python."
     assessment = CompetencyAssessor.assess_job_description(jd_text)

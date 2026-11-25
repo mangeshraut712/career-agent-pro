@@ -173,13 +173,19 @@ class CompetencyAssessor:
         competency_scores = []
         
         for comp in jd_assessment.get("competencies", []):
-            # Count matching keywords
-            keywords = cls.COMPETENCY_KEYWORDS.get(comp["name"], [])
+            # Score only the terms this job description actually uses.
+            # Dividing by the full static catalog keeps a Python-only role
+            # near zero even when the candidate has Python.
+            keywords = [
+                kw
+                for kw in (comp.get("keywords_found") or [])
+                if isinstance(kw, str) and kw.strip()
+            ]
             matches = sum(1 for kw in keywords if term_in_text(user_text, kw))
             total_keywords = len(keywords)
-            
+
             if total_keywords > 0:
-                score = min(100, int((matches / total_keywords) * 150))
+                score = min(100, int(round((matches / total_keywords) * 100)))
             else:
                 score = 0
             
