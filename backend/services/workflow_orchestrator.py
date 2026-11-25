@@ -20,6 +20,33 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+_FIT_LEVELS = frozenset({"excellent", "strong", "moderate", "weak"})
+
+
+def job_context_from_description(job_description: str) -> Dict[str, str]:
+    """Fields for a generator that was only given the raw job description.
+
+    A fit tier such as "excellent" is a score, not the role, and "Target
+    Company" is not a company from the posting.
+    """
+    text = str(job_description or "").strip()
+    first = ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            first = stripped
+            break
+    if first and len(first) <= 80 and first.lower() not in _FIT_LEVELS:
+        title = first
+    else:
+        title = "the open role"
+    return {
+        "title": title,
+        "company": "the company in the job description",
+        "description": text,
+    }
+
+
 class ApplicationOrchestrator:
     """Orchestrates the end-to-end job application workflow."""
     
@@ -68,7 +95,7 @@ class ApplicationOrchestrator:
             # Step 5: Cover Letter Generation
             cls._log_step(results, "Cover Letter", "Generating company-specific cover letter...")
             cl_result = await CoverLetterService.generate(
-                {"title": assessment.fit_level.value, "company": "Target Company", "description": job_description},
+                job_context_from_description(job_description),
                 tailored_resume
             )
             results["cover_letter"] = cl_result
@@ -81,7 +108,7 @@ class ApplicationOrchestrator:
             # Step 7: Outreach Strategy
             cls._log_step(results, "Outreach Strategy", "Generating multi-track outreach plan...")
             strategy = OutreachCreator.create_strategy(
-                {"title": "Role", "company": "Company"},
+                job_context_from_description(job_description),
                 tailored_resume
             )
             results["outreach"] = strategy

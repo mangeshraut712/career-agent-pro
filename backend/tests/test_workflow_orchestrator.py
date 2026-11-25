@@ -2,7 +2,10 @@
 
 import pytest
 from unittest.mock import patch, AsyncMock
-from services.workflow_orchestrator import ApplicationOrchestrator
+from services.workflow_orchestrator import (
+    ApplicationOrchestrator,
+    job_context_from_description,
+)
 
 
 @pytest.mark.asyncio
@@ -45,6 +48,10 @@ async def test_run_full_pipeline_success():
 
     assert results["status"] == "completed"
     assert len(results["steps"]) == 7
+    job_data = mock_cl.await_args.args[0]
+    assert job_data["title"] not in {"excellent", "strong", "moderate", "weak"}
+    assert job_data["company"] != "Target Company"
+    assert job_data["description"] == job_desc
     assert "assessment" in results
     assert "selected_bullets" in results
     assert "tailored_resume" in results
@@ -52,6 +59,21 @@ async def test_run_full_pipeline_success():
     assert "cover_letter" in results
     assert "cl_verification" in results
     assert "outreach" in results
+
+
+def test_job_context_does_not_use_a_fit_tier_as_the_title():
+    short = job_context_from_description("Senior Python Engineer\nBuild APIs.")
+    assert short["title"] == "Senior Python Engineer"
+    assert short["company"] == "the company in the job description"
+
+    long_line = "x" * 81
+    long = job_context_from_description(long_line)
+    assert long["title"] == "the open role"
+    assert long["description"] == long_line
+
+    empty = job_context_from_description("")
+    assert empty["description"] == ""
+    assert empty["title"] == "the open role"
 
 
 @pytest.mark.asyncio
