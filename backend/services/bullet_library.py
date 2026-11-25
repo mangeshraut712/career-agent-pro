@@ -6,7 +6,7 @@ Inspired by Apply-Pilot's bullet library workflow.
 import re
 from typing import Dict, Any, List, Tuple
 
-from services.jd_assessor import JDAssessor
+from services.jd_assessor import JDAssessor, term_in_text
 from services.bullet_framework import BulletFramework
 
 
@@ -79,7 +79,7 @@ class BulletLibrary:
 
         for area, config in JDAssessor.COMPETENCY_AREAS.items():
             keywords = config.get("keywords", [])
-            mentions = sum(1 for kw in keywords if kw.lower() in jd_lower)
+            mentions = sum(1 for kw in keywords if term_in_text(jd_lower, kw))
             base_weight = config.get("weight", 0.2)
             if mentions > 0:
                 weights[area] = base_weight * (mentions / max(len(keywords), 1))
