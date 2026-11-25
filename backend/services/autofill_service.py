@@ -35,6 +35,10 @@ def _optional_yes_no(value):
 
 
 class AutofillService:
+    # Platforms with their own field map. Unknown names still fall back to
+    # Google inside the service; the HTTP API rejects them instead.
+    SUPPORTED_PLATFORMS = ("google", "greenhouse", "lever", "indeed", "linkedin")
+
     @staticmethod
     def get_field_mappings(platform: str):
         """
