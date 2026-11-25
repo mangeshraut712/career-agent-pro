@@ -285,15 +285,27 @@ GET /health
 Response:
 {
   "status": "healthy",
-  "ai_service": "AI",
-  "ai_enabled": true,
-  "model": "qwen/qwen-2.5-coder-32b-instruct",
+  "service": "CareerAgentPro",
+  "version": "1.0.0",
+  "environment": "development",
+  "checks": {
+    "api": "ok",
+    "ai_service": "AI"
+  },
+  "ai_configuration": {
+    "enabled": true,
+    "model": "qwen/qwen-2.5-coder-32b-instruct",
+    "mode": "AI"
+  },
   "features": {
     "resume_parsing": true,
     "resume_enhancement": true,
     "job_extraction": true,
     "cover_letter_generation": true,
-    ...
+    "export_pdf": true,
+    "export_docx": true,
+    "export_latex": true,
+    "ai_fallbacks": true
   }
 }
 ```
@@ -342,19 +354,30 @@ POST /enhance-resume
 Content-Type: application/json
 
 Body: {
-  "resume": { /* resume data */ },
-  "job": { /* job data */ }
+  "resume_data": {
+    "name": "Ada Lovelace",
+    "email": "ada@example.com",
+    "summary": "Built analytical engines.",
+    "experience": [],
+    "education": [],
+    "skills": ["Python"]
+  },
+  "job_description": {
+    "title": "Senior Software Engineer",
+    "company": "Tech Corp",
+    "description": "Build Python services.",
+    "skills": ["Python"]
+  }
 }
 
 Response:
 {
-  "suggestions": {
-    "skills": ["Add: Machine Learning", "Emphasize: Python"],
-    "experience": ["Use STAR format", "Quantify achievements"],
-    "keywords": ["agile", "microservices", "AWS"]
-  },
   "ats_score": 85,
-  "fit_percentage": 78
+  "score": 85,
+  "feedback": "Strong skill overlap with the role.",
+  "tailored_summary": "Engineer focused on Python services.",
+  "suggestions": ["Add metrics to the current role"],
+  "section_improvements": {}
 }
 ```
 
@@ -521,7 +544,7 @@ career-agent-pro/
 │   │   └── 📁 hooks/            # Custom hooks
 │   │       └── useAppData.ts   # Data hook
 │   ├── package.json             # Frontend deps
-│   └── tailwind.config.ts       # Tailwind config
+│   └── postcss.config.mjs       # Tailwind v4 via PostCSS
 │
 ├── .env.example                 # Environment template
 ├── .gitignore                   # Git ignore rules
@@ -546,7 +569,7 @@ pytest
 pytest --cov=. --cov-report=html
 
 # Test specific module
-pytest tests/test_ai_service.py
+pytest tests/test_main.py
 ```
 
 ### Frontend Tests
@@ -624,37 +647,39 @@ curl -sI https://mangeshraut712.github.io/career-agent-pro/
 ### Example: AI Resume Enhancement
 
 ```typescript
-// Upload resume and get AI suggestions
-const response = await fetch("/api/enhance-resume", {
+// Local API. The running app prefixes this with NEXT_PUBLIC_API_URL.
+const response = await fetch("http://localhost:8000/enhance-resume", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    resume: profileData,
-    job: jobData,
+    resume_data: profileData,
+    job_description: jobData,
   }),
 });
 
 const { suggestions, ats_score } = await response.json();
-// suggestions: List of improvements
+// suggestions: string[]
 // ats_score: 0-100 ATS compatibility score
 ```
 
 ### Example: Cover Letter Generation
 
 ```typescript
-// Generate AI cover letter
-const response = await fetch("/api/generate-cover-letter", {
+const response = await fetch("http://localhost:8000/generate-cover-letter", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    job_title: "Senior Developer",
-    company: "Tech Corp",
-    user_profile: profileData,
+    resume_data: profileData,
+    job_description: {
+      title: "Senior Developer",
+      company: "Tech Corp",
+      description: "Build Python services.",
+    },
   }),
 });
 
-const { cover_letter } = await response.json();
-// cover_letter: Fully formatted, personalized letter
+const { content } = await response.json();
+// content: the letter text
 ```
 
 ---
