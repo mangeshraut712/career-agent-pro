@@ -13,11 +13,43 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
+def _inflected_forms(term: str) -> str:
+    """Regex alternatives for the regular inflections of a whole term.
+
+    Whole-term matching must not be narrower than the substring search it
+    replaced, or a posting that says "mentoring" or "coaching" stops counting
+    as asking for mentoring and coaching. Each alternative still ends on a word
+    boundary, so "java" keeps not matching "javascript".
+
+    Only inflections that stay recognisable are generated: plural s/es, and the
+    -ed/-ing/-er forms with the usual e-drop ("lead" -> "leading") and final-
+    consonant doubling ("ship" -> "shipping"). Irregular forms ("manage" ->
+    "management") are not derivable and are not attempted.
+    """
+    base = re.escape(term)
+    last = term[-1]
+    forms = [base]
+    # Plural and third-person s, with es after sibilants ("coach" -> "coaches").
+    forms.append(rf"{base}(?:{'es' if last in 'sxz' or term.endswith(('ch', 'sh')) else 's'})")
+    stem = re.escape(term[:-1]) if last == "e" else base
+    # Most verbs drop a final e before -ing ("lead" -> "leading"), but verbs
+    # ending in ee, ie, oe and ye keep it ("oversee" -> "overseeing").
+    ing_stem = base if last == "e" and term[-2] in "eioy" else stem
+    # Double the final consonant after a short vowel: "ship" -> "shipping",
+    # "bootstrap" -> "bootstrapping". Not after w/x/y, which never double.
+    doubles = last not in "aeiousyx" and len(term) > 2 and term[-2] in "aeiou"
+    forms.append(rf"(?:{base}|{base}{last})ing" if doubles else rf"{ing_stem}ing")
+    forms.append(rf"(?:{base}|{base}{last})ed" if doubles else rf"{stem}ed")
+    forms.append(rf"{stem}ers?")
+    return "(?:" + "|".join(forms) + ")"
+
+
 @lru_cache(maxsize=512)
 def _term_pattern(term: str) -> re.Pattern[str]:
-    """Whole-term match. A trailing plural s is allowed, so "team" matches "teams"."""
-    suffix = "" if term.endswith("s") else "s?"
-    return re.compile(rf"(?<!\w){re.escape(term)}{suffix}(?!\w)")
+    """Whole-term match, including regular inflections: "mentor" matches
+    "mentors", "mentoring" and "mentored", but "java" does not match
+    "javascript"."""
+    return re.compile(rf"(?<!\w){_inflected_forms(term)}(?!\w)")
 
 
 def term_in_text(text: str, term: str) -> bool:
