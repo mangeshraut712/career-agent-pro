@@ -6,11 +6,11 @@ import logging
 from schemas import ResumeData, EnhancementRequest, BulletSelectionRequest, SixPointBullet
 from services.ai_service import AIService
 from services.resume_parser import ResumeParser
-from services.bullet_framework import BulletFramework, analyze_complete_resume, CompanyStage
+from services.bullet_framework import BulletFramework, analyze_complete_resume
 from services.bullet_library import BulletLibrary
 from services.verification_service import ResumeVerifier as LegacyResumeVerifier
 from services.bullet_validator import BulletValidator
-from services.spinning_service import SpinningStrategy
+from services.spinning_service import CompanyStage, SpinningStrategy
 from services.resume_verifier import ResumeVerifier as QualityResumeVerifier
 from dependencies import get_ai_service
 

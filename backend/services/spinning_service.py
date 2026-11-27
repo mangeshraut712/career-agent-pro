@@ -78,11 +78,16 @@ class SpinningStrategy:
         }
     }
     
-    # Generic to specific transformations
+    # Jargon translations that do not change what was done. The rewrite is the
+    # same for every target stage on purpose: rewording a bullet to sound more
+    # "strategic" or more "startup-like" would change the claim, and this module
+    # adapts language without fabrication. Rules that changed the nature or
+    # scope of the work ("tactical" -> "strategic", "command" -> "leadership")
+    # or produced nonsense ("hospice care" -> "response care") are deliberately
+    # absent.
     TRANSFORMATION_RULES = {
         # Healthcare → General
         "patient care": "time-critical service delivery",
-        "hospice": "response",
         "families": "populations",
         "medical": "operational",
         "clinical": "process-driven",
@@ -98,12 +103,13 @@ class SpinningStrategy:
         "lesson plan": "framework",
         "grading": "evaluation",
         
-        # Non-profit → General
+        # Non-profit / Military → General. One entry per term: a duplicated key
+        # would silently keep only the last value.
         "volunteers": "team members",
         "donations": "revenue/funding",
         "community outreach": "user acquisition/engagement",
         "beneficiaries": "stakeholders",
-        "mission": "objective",
+        "mission": "project",
         
         # Academia → Industry
         "research": "analysis/investigation",
@@ -114,10 +120,7 @@ class SpinningStrategy:
         
         # Military → Civilian
         "squadron": "team",
-        "mission": "project",
-        "tactical": "strategic",
         "deployment": "rollout/launch",
-        "command": "leadership",
         "operations": "execution"
     }
     
@@ -128,45 +131,39 @@ class SpinningStrategy:
         target_stage: CompanyStage,
         preserve_metrics: bool = True
     ) -> Dict[str, any]:
-        """
-        Adapt text to target company stage.
-        
-        Args:
-            text: Original text to adapt
-            target_stage: Target company stage
-            preserve_metrics: Keep numbers/metrics unchanged
-            
-        Returns:
-            Dict with spun text, changes, and explanation
+        """Translate sector jargon in `text` into general industry language.
+
+        The translation does not depend on `target_stage`; the stage selects the
+        accompanying guidance in the explanation. Terms are matched as whole
+        phrases, so "mission" is translated inside "led the mission" but not
+        inside "commission".
         """
         original = text or ""
-        spun = text or ""
+        spun = original
         changes = []
         
-        # Get target dictionary
-        target_dict = cls.DICTIONARIES[target_stage]
+        def _replace(match: "re.Match[str]") -> str:
+            replacement = cls.TRANSFORMATION_RULES[match.group(0).lower()]
+            replaced = replacement.capitalize() if match.group(0)[0].isupper() else replacement
+            changes.append({
+                "original": match.group(0),
+                "replaced": replaced,
+                "reason": "General industry language"
+            })
+            return replaced
+
+        # Longest rule first so a specific phrase ("patient care") is applied
+        # before a rule for a word it contains ("care" would be, if it existed).
+        rule_order = sorted(cls.TRANSFORMATION_RULES, key=len, reverse=True)
+        pattern = re.compile(
+            r"(?<!\w)(" + "|".join(re.escape(rule) for rule in rule_order) + r")(?!\w)",
+            re.IGNORECASE,
+        )
+        spun = pattern.sub(_replace, spun)
         
-        # Apply transformation rules
-        for original_term, replacement in cls.TRANSFORMATION_RULES.items():
-            if original_term.lower() in spun.lower():
-                # Case-insensitive replacement preserving original case
-                pattern = re.compile(re.escape(original_term), re.IGNORECASE)
-                matches = pattern.finditer(spun)
-                
-                for match in matches:
-                    original_text = match.group()
-                    # Preserve capitalization
-                    if original_text[0].isupper():
-                        replaced = replacement.capitalize()
-                    else:
-                        replaced = replacement
-                    
-                    spun = spun.replace(original_text, replaced, 1)
-                    changes.append({
-                        "original": original_text,
-                        "replaced": replaced,
-                        "reason": f"More industry-standard language for {target_stage.value}"
-                    })
+        # The stage shapes the guidance, not the rewrite; reject an unknown one.
+        if target_stage not in cls.DICTIONARIES:
+            raise ValueError(f"Unknown company stage: {target_stage!r}")
         
         # Extract and preserve metrics if requested
         metrics = []
