@@ -136,8 +136,8 @@ Then create a Pull Request on GitHub.
 ### Python (Backend)
 
 - **Style Guide**: Follow [PEP 8](https://pep8.org/)
-- **Formatting**: Use `black` for code formatting
-- **Linting**: Use `flake8` for linting
+- **Linting**: `ruff check .` from `backend/` (this is what CI runs)
+- **Types**: `mypy security_utils.py auth_utils.py --ignore-missing-imports`
 - **Type Hints**: Use type hints for all function parameters and return values
 - **Docstrings**: Use Google-style docstrings
 
@@ -304,10 +304,10 @@ pytest
 pytest --cov=. --cov-report=html
 
 # Run specific test file
-pytest tests/test_ai_service.py
+pytest tests/test_main.py
 
 # Run specific test
-pytest tests/test_ai_service.py::test_enhance_resume
+pytest tests/test_main.py::TestHealthEndpoint::test_health_returns_200
 ```
 
 ### Frontend Testing
