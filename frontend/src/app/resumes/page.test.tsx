@@ -8,6 +8,14 @@ const mocks = vi.hoisted(() => ({
   exportResumeDocx: vi.fn(),
   exportResumePdf: vi.fn(),
   toast: vi.fn(),
+  post: vi.fn(),
+  currentJob: null as null | {
+    title: string;
+    company: string;
+    description: string;
+    requirements: string[];
+    skills: string[];
+  },
 }));
 
 const profile = {
@@ -27,10 +35,16 @@ vi.mock("@/lib/resumeExport", () => ({
 
 vi.mock("@/hooks/useAppData", () => ({
   useAppData: () => ({
-    currentJob: null,
+    currentJob: mocks.currentJob,
     profile,
     updateProfile: vi.fn(),
   }),
+}));
+
+vi.mock("axios", () => ({
+  default: {
+    post: (...args: unknown[]) => mocks.post(...args),
+  },
 }));
 
 vi.mock("@/components/ui/Toast", () => ({
@@ -57,6 +71,9 @@ describe("ResumesPage exports", () => {
     mocks.exportResumeDocx.mockReset().mockResolvedValue(undefined);
     mocks.exportResumePdf.mockReset().mockResolvedValue(undefined);
     mocks.toast.mockReset();
+    mocks.post.mockReset();
+    mocks.currentJob = null;
+    profile.skills = ["Python"];
   });
 
   it("uses the PDF export client instead of only showing a success message", async () => {
@@ -118,5 +135,24 @@ describe("ResumesPage exports", () => {
         "success",
       ),
     );
+  });
+
+  it("does not count Java as JavaScript when the API is unavailable", async () => {
+    profile.skills = ["Java"];
+    mocks.currentJob = {
+      title: "Frontend Engineer",
+      company: "Example",
+      description: "Build interfaces.",
+      requirements: [],
+      skills: ["JavaScript", "Python"],
+    };
+    mocks.post.mockRejectedValue(new Error("offline"));
+
+    render(<ResumesPage />);
+    fireEvent.click(screen.getByRole("button", { name: /initiate deep forge/i }));
+
+    expect(await screen.findByText(/Verified Skills \(0\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Optimization Req\. \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText("JavaScript")).toBeInTheDocument();
   });
 });
