@@ -29,7 +29,11 @@ def _inflected_forms(term: str) -> str:
     """
     base = re.escape(term)
     last = term[-1]
-    prev = term[-2] if len(term) > 1 else ""
+    # A single character has no meaningful inflections, and stripping it would
+    # leave bare suffixes ("ed", "ers") that match ordinary words.
+    if len(term) <= 1:
+        return base
+    prev = term[-2]
     forms = [base]
     # Plural and third-person s, with es after sibilants ("coach" -> "coaches").
     forms.append(rf"{base}(?:{'es' if last in 'sxz' or term.endswith(('ch', 'sh')) else 's'})")

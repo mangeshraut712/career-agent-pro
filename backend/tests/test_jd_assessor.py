@@ -106,6 +106,14 @@ def test_term_in_text_handles_single_character_terms(text, term):
     # A one-character term has no preceding character to inspect for the e-drop
     # and doubling rules; this used to raise IndexError.
     assert isinstance(term_in_text(text, term), bool)
+    assert term_in_text(text, term) is (len(text.split()) > 0 and term in text.split())
+
+
+@pytest.mark.parametrize("text, term", [("ing is a word", "e"), ("he led", "e"), ("ers", "e"), ("eds", "e"), ("sing", "s")])
+def test_single_character_term_does_not_match_bare_suffixes(text, term):
+    # Stripping a one-character term leaves only a suffix such as "ed" or
+    # "ers", which would otherwise match as a word of its own.
+    assert term_in_text(text, term) is False
 
 
 @pytest.mark.parametrize(
