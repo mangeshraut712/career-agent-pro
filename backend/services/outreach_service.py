@@ -4,6 +4,7 @@ Inspired by Apply-Pilot's outreach creator agent.
 """
 
 import logging
+import re
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -203,8 +204,8 @@ Best,
         job_data = job_data or {}
         resume_data = resume_data or {}
         
-        job_title = job_data.get("title", "the position")
-        company = job_data.get("company", "the company")
+        job_title = job_data.get("title") or "Open role"
+        company = job_data.get("company") or "your company"
         candidate_name = resume_data.get("name", "Candidate")
         
         # Determine primary track
@@ -244,24 +245,28 @@ Best,
         # Direct track - all tiers
         for tier, channels in cls.TEMPLATES[OutreachTrack.DIRECT].items():
             for channel, template in channels.items():
+                # Fill first: the subject must carry the real values, not the
+                # "{job_title}" placeholder.
+                message = cls._fill_template(template, context)
                 messages.append(OutreachMessage(
                     track=OutreachTrack.DIRECT,
                     tier=tier,
                     channel=channel,
-                    subject=cls._extract_subject(template),
-                    message=cls._fill_template(template, context),
+                    subject=cls._extract_subject(message),
+                    message=message,
                     timing=cls._get_timing(tier),
                     tips=cls._get_tips(OutreachTrack.DIRECT, tier, channel)
                 ))
         
         # Cold outreach - tier 1
         for channel, template in cls.TEMPLATES[OutreachTrack.COLD_OUTREACH][EscalationTier.TIER_1].items():
+            message = cls._fill_template(template, context)
             messages.append(OutreachMessage(
                 track=OutreachTrack.COLD_OUTREACH,
                 tier=EscalationTier.TIER_1,
                 channel=channel,
-                subject=cls._extract_subject(template),
-                message=cls._fill_template(template, context),
+                subject=cls._extract_subject(message),
+                message=message,
                 timing="After researching the contact",
                 tips=cls._get_tips(OutreachTrack.COLD_OUTREACH, EscalationTier.TIER_1, channel)
             ))
@@ -287,8 +292,11 @@ Best,
         highlights = cls._extract_highlights(resume_data)
         
         return {
-            "job_title": job_data.get("title", "the position"),
-            "company": job_data.get("company", "your company"),
+            # "your company" is a bare noun phrase: the templates add their
+            # own article ("at {company}", "{company}'s"), so "the company"
+            # rendered as "at the company" inside "the the position role".
+            "job_title": job_data.get("title") or cls.UNKNOWN_TITLE,
+            "company": job_data.get("company") or "your company",
             "candidate_name": resume_data.get("name", ""),
             "key_skill": skills[0] if skills else "relevant skills",
             "recent_company": recent_company,
@@ -332,13 +340,49 @@ Best,
         
         return highlights[:3]
     
+    # Used when the title is unknown. The templates add their own article and
+    # often their own noun ("the {job_title} role", "{company}'s {job_title}
+    # opening"), so a plain default either doubled the article ("the the
+    # position role") or the noun ("the new role role"). With this marker in
+    # place, _fill_template rewrites each phrase to a complete neutral one.
+    UNKNOWN_TITLE = "\u0000unknown-title\u0000"
+
     @classmethod
     def _fill_template(cls, template: str, context: Dict[str, str]) -> str:
         """Fill template with context values."""
         result = template
         for key, value in context.items():
             result = result.replace("{" + key + "}", value)
+        if cls.UNKNOWN_TITLE in result:
+            result = cls._neutralise_unknown_title(result)
         return result
+
+    @classmethod
+    def _neutralise_unknown_title(cls, text: str) -> str:
+        """Replace every phrase built around an unknown title with neutral wording.
+
+        Templates wrap the title in an article and often a noun ("the {title}
+        role", "a {title}", "About {title} at"). Each rule rewrites one such
+        wrapper into a complete phrase, so nothing depends on the unknown
+        value carrying its own grammar.
+        """
+        u = re.escape(cls.UNKNOWN_TITLE)
+        rules = [
+            # "the/their {u} role|position|opening" and "{company}'s {u} role"
+            (rf"(the|their) {u} (?:role|position|opening)", r"\1 open role"),
+            (rf"({u} (?:role|position|opening))", "open role"),
+            # Subject lines: "{u} Application", "Final Check-In – {u} Position"
+            (rf"{u} (?:Application|Position)", "Application"),
+            # "About {u} at {company}", "Interest in {u} at {company}"
+            (rf"(About|in) {u} (?=at\b)", r"\1 the open role "),
+            # "hiring for a {u}" / "hiring for a {u}—"
+            (rf"\ba {u}", "a role"),
+            # Anything left: use a complete neutral noun phrase.
+            (rf"{u}", "the open role"),
+        ]
+        for pattern, replacement in rules:
+            text = re.sub(pattern, replacement, text)
+        return text
     
     @classmethod
     def _extract_subject(cls, template: str) -> Optional[str]:
