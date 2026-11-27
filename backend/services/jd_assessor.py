@@ -22,24 +22,41 @@ def _inflected_forms(term: str) -> str:
     boundary, so "java" keeps not matching "javascript".
 
     Only inflections that stay recognisable are generated: plural s/es, and the
-    -ed/-ing/-er forms with the usual e-drop ("lead" -> "leading") and final-
-    consonant doubling ("ship" -> "shipping"). Irregular forms ("manage" ->
-    "management") are not derivable and are not attempted.
+    -ed/-ing/-er forms with the usual e-drop ("lead" -> "leading"), y-to-i
+    ("study" -> "studied") and final-consonant doubling ("ship" -> "shipping").
+    Irregular forms ("manage" -> "management") are not derivable and are not
+    attempted.
     """
     base = re.escape(term)
     last = term[-1]
+    # A single character has no meaningful inflections, and stripping it would
+    # leave bare suffixes ("ed", "ers") that match ordinary words.
+    if len(term) <= 1:
+        return base
+    prev = term[-2]
     forms = [base]
     # Plural and third-person s, with es after sibilants ("coach" -> "coaches").
     forms.append(rf"{base}(?:{'es' if last in 'sxz' or term.endswith(('ch', 'sh')) else 's'})")
-    stem = re.escape(term[:-1]) if last == "e" else base
+
+    ends_in_e = last == "e"
+    stem = re.escape(term[:-1]) if ends_in_e else base
     # Most verbs drop a final e before -ing ("lead" -> "leading"), but verbs
     # ending in ee, ie, oe and ye keep it ("oversee" -> "overseeing").
-    ing_stem = base if last == "e" and term[-2] in "eioy" else stem
-    # Double the final consonant after a short vowel: "ship" -> "shipping",
-    # "bootstrap" -> "bootstrapping". Not after w/x/y, which never double.
-    doubles = last not in "aeiousyx" and len(term) > 2 and term[-2] in "aeiou"
+    ing_stem = base if ends_in_e and prev in "eioy" else stem
+
+    # Double the final consonant after a short vowel ("ship" -> "shipping",
+    # "bootstrap" -> "bootstrapping"). English doubles only these consonants.
+    doubles = last in "bdglmnprt" and len(term) > 2 and prev in "aeiou"
+    # A consonant followed by y becomes i before -ed ("study" -> "studied").
+    y_to_i = last == "y" and len(term) > 1 and prev not in "aeiou"
+
     forms.append(rf"(?:{base}|{base}{last})ing" if doubles else rf"{ing_stem}ing")
-    forms.append(rf"(?:{base}|{base}{last})ed" if doubles else rf"{stem}ed")
+    if doubles:
+        forms.append(rf"(?:{base}|{base}{last})ed")
+    elif y_to_i:
+        forms.append(rf"{re.escape(term[:-1])}ied")
+    else:
+        forms.append(rf"{stem}ed")
     forms.append(rf"{stem}ers?")
     return "(?:" + "|".join(forms) + ")"
 

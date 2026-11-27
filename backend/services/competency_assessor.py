@@ -253,7 +253,9 @@ class CompetencyAssessor:
         
         for stage, indicators in cls.STAGE_INDICATORS.items():
             for indicator in indicators:
-                if indicator in text:
+                # Whole terms only. "0-1" is an early-stage signal, but it is
+                # also a substring of a tenure range such as "10-15".
+                if term_in_text(text, indicator):
                     stage_scores[stage] += 1
         
         # Return stage with highest score
