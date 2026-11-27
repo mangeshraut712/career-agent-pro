@@ -66,7 +66,12 @@ class AutofillService:
                 "last_name": ["last_name"],
                 "email": ["email"],
                 "phone": ["phone"],
-                "linkedin": ["linkedin", "job_application_answers_attributes_0_text_value"],
+                # Matched by label only. An earlier fallback targeted
+                # "job_application_answers_attributes_0_text_value", the first
+                # custom answer on any Greenhouse form, so a profile's LinkedIn
+                # URL was typed into "How did you hear about us?" when the form
+                # had no LinkedIn question.
+                "linkedin": ["linkedin"],
                 "website": ["website", "portfolio"],
             },
             "lever": {

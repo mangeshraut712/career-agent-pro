@@ -123,7 +123,13 @@ class TestGenerateAutofillPlatforms:
             json={"resume_data": resume, "platform": "Greenhouse"},
         )
         assert greenhouse.status_code == 200
-        assert "job_application_answers_attributes" in greenhouse.json()["script"]
+        script = greenhouse.json()["script"]
+        # Greenhouse is the only mapping whose selectors are the bare snake_case
+        # field names. (An earlier assertion looked for the id of the first
+        # custom answer, which only appeared because of a since-removed
+        # positional fallback.)
+        assert '"first_name": ["first_name"]' in script
+        assert '"last_name": ["last_name"]' in script
 
         lever = client.post(
             "/generate-autofill",
