@@ -167,6 +167,11 @@ describe("ProfilePage resume parse", () => {
   });
 
   it("tells the user when the browser refuses to save", async () => {
+    // secureSet leaves an existing key untouched when it fails, so this test
+    // only means something if storage is empty to begin with. setup.ts clears
+    // it globally; assert that here so losing that clear fails loudly.
+    expect(savedProfile()).toBeNull();
+
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("QuotaExceededError");
     });
