@@ -113,3 +113,24 @@ def test_generate_autofill_script_none_and_invalid_data():
     script_invalid = AutofillService.generate_autofill_script("not a dict", platform=None)
     assert isinstance(script_invalid, str)
     assert "Enhanced AI Autofill attempt completed" in script_invalid
+
+def test_greenhouse_linkedin_is_matched_by_label_not_by_position():
+    """A profile's LinkedIn URL must only reach a field that is LinkedIn's.
+
+    The mapping used to fall back to the id of the first custom answer on any
+    Greenhouse form, so on a form without a LinkedIn question the URL was typed
+    into whichever question happened to be first, such as "How did you hear
+    about us?".
+    """
+    resume_data = {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "linkedin": "https://linkedin.com/in/janedoe",
+    }
+
+    script = AutofillService.generate_autofill_script(resume_data, platform="greenhouse")
+
+    assert "job_application_answers_attributes_0_text_value" not in script
+    # The label-based selector is still generated, so a form that does ask for
+    # LinkedIn (by aria-label or label text) is still filled.
+    assert '"linkedin"' in script

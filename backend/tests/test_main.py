@@ -113,6 +113,44 @@ class TestEndpointMethodValidation:
                 f"{endpoint} should reject POST, got {response.status_code}"
 
 
+class TestGenerateAutofillPlatforms:
+    """Greenhouse and Lever mappings exist; the API must accept them."""
+
+    def test_greenhouse_and_lever_are_accepted(self):
+        resume = {"name": "Ada Lovelace", "email": "ada@example.com"}
+        greenhouse = client.post(
+            "/generate-autofill",
+            json={"resume_data": resume, "platform": "Greenhouse"},
+        )
+        assert greenhouse.status_code == 200
+        script = greenhouse.json()["script"]
+        # Greenhouse is the only mapping whose selectors are the bare snake_case
+        # field names. (An earlier assertion looked for the id of the first
+        # custom answer, which only appeared because of a since-removed
+        # positional fallback.)
+        assert '"first_name": ["first_name"]' in script
+        assert '"last_name": ["last_name"]' in script
+
+        lever = client.post(
+            "/generate-autofill",
+            json={"resume_data": resume, "platform": "lever"},
+        )
+        assert lever.status_code == 200
+        assert "urls[LinkedIn]" in lever.json()["script"]
+
+    def test_unknown_platform_is_rejected(self):
+        response = client.post(
+            "/generate-autofill",
+            json={
+                "resume_data": {"name": "Ada Lovelace", "email": "ada@example.com"},
+                "platform": "workday",
+            },
+        )
+        assert response.status_code == 400
+        assert "greenhouse" in response.json()["error"]
+        assert "lever" in response.json()["error"]
+
+
 class TestLangChainEndpointRegistration:
     """Verify LangChain-specific endpoints exist."""
 

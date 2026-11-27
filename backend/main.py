@@ -465,7 +465,8 @@ async def generate_autofill(data: dict = Body(...)):
     """Generate autofill script for job application platforms."""
     try:
         resume_data = data.get("resume_data")
-        platform = data.get("platform", "google")
+        raw_platform = data.get("platform", "google")
+        platform = raw_platform.strip().lower() if isinstance(raw_platform, str) else ""
         
         if not resume_data:
             raise HTTPException(
@@ -473,10 +474,11 @@ async def generate_autofill(data: dict = Body(...)):
                 detail="resume_data is required"
             )
         
-        if platform not in ["google", "indeed", "linkedin"]:
+        if platform not in AutofillService.SUPPORTED_PLATFORMS:
+            supported = ", ".join(AutofillService.SUPPORTED_PLATFORMS)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid platform. Supported: google, indeed, linkedin"
+                detail=f"Invalid platform. Supported: {supported}"
             )
         
         script = AutofillService.generate_autofill_script(resume_data, platform)
