@@ -853,6 +853,27 @@ Return ONLY valid JSON with these fields:
                 return [item.strip() for item in items if len(item.strip()) > 10][:15]
         return []
     
+    # Job board roots, longest first so a more specific root wins if one is
+    # ever a suffix of another. A URL host belongs to a board when it equals
+    # the root or is a subdomain of it, which covers "www." prefixes.
+    JOB_BOARD_ROOTS: tuple[tuple[str, str], ...] = (
+        ("linkedin.com", "linkedin"),
+        ("indeed.com", "indeed"),
+        ("glassdoor.com", "glassdoor"),
+        ("lever.co", "lever"),
+        ("greenhouse.io", "greenhouse"),
+        ("ashbyhq.com", "ashby"),
+        ("jobright.ai", "jobright"),
+        ("simplify.jobs", "simplify"),
+        ("wellfound.com", "wellfound"),
+        ("angel.co", "wellfound"),
+    )
+
+    @staticmethod
+    def _is_job_board_host(host: str, root: str) -> bool:
+        """True when `host` is `root` or one of its subdomains."""
+        return host == root or host.endswith("." + root)
+
     def _detect_job_source(self, url: str) -> str:
         """Detect the job board source from URL using secure domain parsing"""
         try:
@@ -860,33 +881,13 @@ Return ONLY valid JSON with these fields:
             # hostname drops userinfo and the port. netloc kept ":443", so
             # boards.greenhouse.io:443 never matched a greenhouse host.
             host = (parsed.hostname or "").lower().rstrip(".")
-            domain = host[4:] if host.startswith("www.") else host
-            if not domain:
+            if not host:
                 return 'other'
 
-            def is_host(root: str) -> bool:
-                return domain == root or domain.endswith("." + root)
-
-            if is_host("linkedin.com"):
-                return 'linkedin'
-            elif is_host("indeed.com"):
-                return 'indeed'
-            elif is_host("glassdoor.com"):
-                return 'glassdoor'
-            elif is_host("lever.co"):
-                return 'lever'
-            elif is_host("greenhouse.io"):
-                return 'greenhouse'
-            elif is_host("ashbyhq.com"):
-                return 'ashby'
-            elif is_host("jobright.ai"):
-                return 'jobright'
-            elif is_host("simplify.jobs"):
-                return 'simplify'
-            elif is_host("wellfound.com") or is_host("angel.co"):
-                return 'wellfound'
-            else:
-                return 'other'
+            for root, source in self.JOB_BOARD_ROOTS:
+                if self._is_job_board_host(host, root):
+                    return source
+            return 'other'
         except Exception:
             return 'other'
 
