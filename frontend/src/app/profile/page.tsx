@@ -32,58 +32,19 @@ import { useToast } from "@/components/ui/Toast";
 import { secureGet, secureSet } from "@/lib/secureStorage";
 import { FADE_IN } from "@/lib/animations";
 import { validateResumeFile } from "@/lib/resumeFile";
+import { EMPTY_PROFILE, sanitizeProfile } from "./profileData";
+import type {
+  Education,
+  Experience,
+  ProfileData,
+  Project,
+} from "./profileTypes";
 
 function editOnKeyDown(event: KeyboardEvent, onEdit: () => void) {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     onEdit();
   }
-}
-
-interface Experience {
-  id: string;
-  company: string;
-  role: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  type: string;
-  description: string;
-}
-
-interface Education {
-  id: string;
-  institution: string;
-  degree: string;
-  field: string;
-  startDate: string;
-  endDate: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  technologies?: string[];
-}
-
-interface ProfileData {
-  name: string;
-  title: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  github: string;
-  portfolio: string;
-  jobSearchStatus: string;
-  experience: Experience[];
-  education: Education[];
-  projects: Project[];
-  certifications: string[];
-  skills: string[];
-  preferredSkills: string[];
-  summary: string;
 }
 
 interface ParsedExperience {
@@ -107,31 +68,7 @@ interface ParsedEducation {
   year?: string;
 }
 
-interface ParsedProject {
-  name?: string;
-  description?: string;
-}
-
 const generateId = () => Math.random().toString(36).substr(2, 9);
-
-const EMPTY_PROFILE: ProfileData = {
-  name: "",
-  title: "",
-  email: "",
-  phone: "",
-  location: "",
-  linkedin: "",
-  github: "",
-  portfolio: "",
-  jobSearchStatus: "actively_looking",
-  experience: [],
-  education: [],
-  projects: [],
-  certifications: [],
-  skills: [],
-  preferredSkills: [],
-  summary: "",
-};
 
 const navItems = [
   {
@@ -187,8 +124,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setHasMounted(true);
-    const saved = secureGet<ProfileData>("profile");
-    if (saved) setProfile(saved);
+    // A record written by an older build, or by an import that saved a
+    // value of the wrong type, must not crash the page on every load. It is
+    // sanitized instead: well-formed fields survive, malformed ones drop.
+    const saved = secureGet<unknown>("profile");
+    if (saved) setProfile(sanitizeProfile(saved));
   }, []);
 
   if (!hasMounted) return null;
@@ -291,33 +231,51 @@ export default function ProfilePage() {
                   endDate: edu.graduation_year || edu.year || "",
                 }));
 
-                setProfile((prev) => ({
-                  ...prev,
-                  name: parsed.name || prev.name,
-                  title: parsed.jobTitle || parsed.title || prev.title,
-                  email: parsed.email || prev.email,
-                  phone: parsed.phone || prev.phone,
-                  location: parsed.location || prev.location,
-                  linkedin: parsed.linkedin || prev.linkedin,
-                  github: parsed.github || prev.github,
-                  portfolio:
-                    parsed.portfolio || parsed.website || prev.portfolio,
-                  skills: parsed.skills?.length ? parsed.skills : prev.skills,
-                  summary: parsed.summary || prev.summary,
+                // The model's JSON is untrusted: a truthy non-string name
+                // (["Ada", "Lovelace"]) used to be saved and then crash the
+                // header's .split(" ") on every reload.
+                const incoming = sanitizeProfile(parsed);
+
+                const next: ProfileData = {
+                  ...profile,
+                  // Scalars and lists replace what is there only when the
+                  // parse produced them; otherwise the saved value is kept.
+                  name: incoming.name || profile.name,
+                  title: incoming.title || profile.title,
+                  email: incoming.email || profile.email,
+                  phone: incoming.phone || profile.phone,
+                  location: incoming.location || profile.location,
+                  linkedin: incoming.linkedin || profile.linkedin,
+                  github: incoming.github || profile.github,
+                  portfolio: incoming.portfolio || profile.portfolio,
+                  skills: incoming.skills.length ? incoming.skills : profile.skills,
+                  summary: incoming.summary || profile.summary,
                   experience: mappedExperience.length
                     ? mappedExperience
-                    : prev.experience,
+                    : profile.experience,
                   education: mappedEducation.length
                     ? mappedEducation
-                    : prev.education,
-                  projects: (parsed.projects || []).map((p: ParsedProject) => ({
-                    id: generateId(),
-                    name: p.name || "",
-                    description: p.description || "",
-                  })),
-                  certifications: parsed.certifications || [],
-                }));
-                toast("Profile Synchronization Complete!", "success");
+                    : profile.education,
+                  // A resume that lists no projects or certifications must not
+                  // erase the entries the user added by hand.
+                  projects: incoming.projects.length
+                    ? incoming.projects
+                    : profile.projects,
+                  certifications: incoming.certifications.length
+                    ? incoming.certifications
+                    : profile.certifications,
+                };
+
+                setProfile(next);
+                // Persist outside the state updater, which React may call more
+                // than once, and report honestly when the browser refuses.
+                const persisted = secureSet("profile", next);
+                toast(
+                  persisted
+                    ? "Profile Synchronization Complete!"
+                    : "Profile updated for this session only. Your browser blocked saving, so it will not survive a reload.",
+                  persisted ? "success" : "error",
+                );
               }
             } catch (e) {
               console.warn("Error parsing chunk", e);
