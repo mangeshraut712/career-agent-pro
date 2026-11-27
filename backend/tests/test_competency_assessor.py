@@ -81,6 +81,39 @@ def test_calculate_fit_score():
     assert "top_gaps" in fit
 
 
+def test_fit_score_uses_keywords_the_job_mentions():
+    assessment = CompetencyAssessor.assess_job_description("Python developer only.")
+    fit = CompetencyAssessor.calculate_fit_score(assessment, ["python"], [])
+
+    technical = next(
+        cs for cs in fit["competency_scores"] if cs["competency"] == "Technical Skills"
+    )
+    assert technical["matched_keywords"] == 1
+    assert technical["total_keywords"] == 1
+    assert technical["your_score"] == 100
+    assert fit["overall_fit"] == 100
+
+
+def test_fit_score_is_100_for_a_complete_match_across_three_equal_competencies():
+    # Three equally weighted competencies each carry a display weight of 33.3,
+    # which sum to 99.9. Using those rounded weights as exact, then truncating,
+    # reported a perfect match as 99%.
+    assessment = CompetencyAssessor.assess_job_description(
+        "Python, Scrum, and roadmap ownership."
+    )
+    assert len(assessment["competencies"]) == 3
+    fit = CompetencyAssessor.calculate_fit_score(
+        assessment, ["python", "scrum", "roadmap"], []
+    )
+    assert [cs["your_score"] for cs in fit["competency_scores"]] == [100, 100, 100]
+    assert fit["overall_fit"] == 100
+    # The response shape is unchanged: the raw weights are not exposed.
+    assert set(fit["competency_scores"][0]) == {
+        "competency", "weightage", "your_score", "matched_keywords",
+        "total_keywords", "gap",
+    }
+
+
 def test_calculate_fit_score_empty_profile():
     jd_text = "Technical role requiring python."
     assessment = CompetencyAssessor.assess_job_description(jd_text)
