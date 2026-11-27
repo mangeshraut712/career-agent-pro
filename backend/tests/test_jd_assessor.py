@@ -91,10 +91,21 @@ def test_jd_assessor_assess_empty_profile():
         ("stopped the rollout", "stop"),
         ("overseeing delivery", "oversee"),
         ("agreeing on scope", "agree"),
+        # y becomes i before -ed.
+        ("studied the market", "study"),
+        ("carried the project", "carry"),
+        ("applied the framework", "apply"),
     ],
 )
 def test_term_in_text_matches_regular_inflections(text, term):
     assert term_in_text(text, term) is True
+
+
+@pytest.mark.parametrize("text, term", [("e", "e"), ("a e", "e"), ("x", "x"), ("ab", "b"), ("", "e")])
+def test_term_in_text_handles_single_character_terms(text, term):
+    # A one-character term has no preceding character to inspect for the e-drop
+    # and doubling rules; this used to raise IndexError.
+    assert isinstance(term_in_text(text, term), bool)
 
 
 @pytest.mark.parametrize(
@@ -108,6 +119,9 @@ def test_term_in_text_matches_regular_inflections(text, term):
         ("seeding the database", "see"),
         ("regrown from cuttings", "grow"),
         ("10-15 years of experience", "0-1"),
+        # The y-to-i rule replaces, not adds: the naive spelling is not generated.
+        ("studyed the market", "study"),
+        ("carryed the project", "carry"),
     ],
 )
 def test_term_in_text_still_rejects_shared_stems(text, term):
