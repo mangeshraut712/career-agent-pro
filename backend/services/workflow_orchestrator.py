@@ -22,27 +22,49 @@ logger = logging.getLogger(__name__)
 
 _FIT_LEVELS = frozenset({"excellent", "strong", "moderate", "weak"})
 
+# Headings that introduce a posting's body rather than naming the role.
+_SECTION_HEADINGS = frozenset({
+    "about the role", "about this role", "about the job", "about the position",
+    "about us", "about the company", "the opportunity", "job description",
+    "overview", "responsibilities", "requirements", "qualifications",
+    "who you are", "what you'll do", "what we're looking for",
+})
+
+
+def _looks_like_title(line: str) -> bool:
+    """Whether a line names the role rather than introducing the posting.
+
+    A title is short, not a sentence, and not a section heading. "About the
+    role" fails the last check; "Senior Backend Engineer" passes all three.
+    """
+    lowered = line.lower().rstrip(":")
+    if lowered in _SECTION_HEADINGS or lowered in _FIT_LEVELS:
+        return False
+    if len(line) > 80 or line.endswith((".", "!", "?")):
+        return False
+    return True
+
 
 def job_context_from_description(job_description: str) -> Dict[str, str]:
     """Fields for a generator that was only given the raw job description.
 
-    A fit tier such as "excellent" is a score, not the role, and "Target
-    Company" is not a company from the posting.
+    Only a line that plausibly names the role is used as the title; a fit
+    tier such as "excellent" is a score, not the role, and "About the role"
+    is a heading. The company is never known from the description alone. An
+    unknown value is left empty so that consumers can leave it out instead of
+    writing "the About the role role".
     """
     text = str(job_description or "").strip()
-    first = ""
+    title = ""
     for line in text.splitlines():
         stripped = line.strip()
         if stripped:
-            first = stripped
+            if _looks_like_title(stripped):
+                title = stripped
             break
-    if first and len(first) <= 80 and first.lower() not in _FIT_LEVELS:
-        title = first
-    else:
-        title = "the open role"
     return {
         "title": title,
-        "company": "the company in the job description",
+        "company": "",
         "description": text,
     }
 

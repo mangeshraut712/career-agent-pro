@@ -52,13 +52,17 @@ def test_create_strategy_warm_intro():
 
 
 def test_create_strategy_none_and_empty():
-    # Graceful handling of None
+    # Graceful handling of None. The public fields are readable, and the
+    # messages never carry a doubled article ("the the position role").
     strategy = OutreachCreator.create_strategy(None, None)
-    assert strategy.job_title == "the position"
-    assert strategy.company == "the company"
+    assert strategy.job_title == "Open role"
+    assert strategy.company == "your company"
     assert strategy.primary_track == OutreachTrack.DIRECT
     assert len(strategy.messages) > 0
     assert len(strategy.target_contacts) > 0
+    for message in strategy.messages:
+        assert "the the" not in message.message
+        assert "{" not in message.message
 
 
 def test_generate_outreach_strategy_dict_output():
