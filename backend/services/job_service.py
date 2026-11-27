@@ -853,33 +853,41 @@ Return ONLY valid JSON with these fields:
                 return [item.strip() for item in items if len(item.strip()) > 10][:15]
         return []
     
+    # Job board roots, longest first so a more specific root wins if one is
+    # ever a suffix of another. A URL host belongs to a board when it equals
+    # the root or is a subdomain of it, which covers "www." prefixes.
+    JOB_BOARD_ROOTS: tuple[tuple[str, str], ...] = (
+        ("linkedin.com", "linkedin"),
+        ("indeed.com", "indeed"),
+        ("glassdoor.com", "glassdoor"),
+        ("lever.co", "lever"),
+        ("greenhouse.io", "greenhouse"),
+        ("ashbyhq.com", "ashby"),
+        ("jobright.ai", "jobright"),
+        ("simplify.jobs", "simplify"),
+        ("wellfound.com", "wellfound"),
+        ("angel.co", "wellfound"),
+    )
+
+    @staticmethod
+    def _is_job_board_host(host: str, root: str) -> bool:
+        """True when `host` is `root` or one of its subdomains."""
+        return host == root or host.endswith("." + root)
+
     def _detect_job_source(self, url: str) -> str:
         """Detect the job board source from URL using secure domain parsing"""
         try:
             parsed = urlparse(url)
-            host = parsed.netloc.lower()
-            domain = host[4:] if host.startswith("www.") else host
-            
-            if domain == "linkedin.com" or domain.endswith(".linkedin.com"):
-                return 'linkedin'
-            elif domain == "indeed.com" or domain.endswith(".indeed.com"):
-                return 'indeed'
-            elif domain == "glassdoor.com" or domain.endswith(".glassdoor.com"):
-                return 'glassdoor'
-            elif domain == "lever.co" or domain.endswith(".lever.co"):
-                return 'lever'
-            elif domain == "greenhouse.io" or domain.endswith(".boards.greenhouse.io"):
-                return 'greenhouse'
-            elif domain == "ashbyhq.com" or domain.endswith(".ashbyhq.com"):
-                return 'ashby'
-            elif domain == "jobright.ai" or domain.endswith(".jobright.ai"):
-                return 'jobright'
-            elif domain == "simplify.jobs" or domain.endswith(".simplify.jobs"):
-                return 'simplify'
-            elif domain in ["wellfound.com", "angel.co"] or domain.endswith(".wellfound.com"):
-                return 'wellfound'
-            else:
+            # hostname drops userinfo and the port. netloc kept ":443", so
+            # boards.greenhouse.io:443 never matched a greenhouse host.
+            host = (parsed.hostname or "").lower().rstrip(".")
+            if not host:
                 return 'other'
+
+            for root, source in self.JOB_BOARD_ROOTS:
+                if self._is_job_board_host(host, root):
+                    return source
+            return 'other'
         except Exception:
             return 'other'
 
