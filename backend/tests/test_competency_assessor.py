@@ -51,6 +51,21 @@ def test_detect_company_stage():
     assert CompetencyAssessor._detect_company_stage("0-1 product builder") == "early_stage"
 
 
+def test_detect_company_stage_keeps_inflected_indicators():
+    # "bootstrapped" is the only stage cue here. Whole-term matching used to
+    # reject it because only "bootstrap" is listed, so this read as "unknown"
+    # and the assessment skipped early-stage advice.
+    stage = CompetencyAssessor._detect_company_stage(
+        "Join our bootstrapped software company and own the product roadmap."
+    )
+    assert stage == "early_stage"
+
+    assessment = CompetencyAssessor.assess_job_description(
+        "Join our bootstrapped software company and own the product roadmap."
+    )
+    assert assessment["company_stage"] == "early_stage"
+
+
 def test_calculate_fit_score():
     jd_text = "Python backend engineer building aws cloud architecture and sql databases."
     assessment = CompetencyAssessor.assess_job_description(jd_text)
