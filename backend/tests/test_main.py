@@ -150,3 +150,27 @@ class TestSpinTextEndpoint:
         assert isinstance(body["spun"], str)
         assert body["spun"]
         assert isinstance(body["changes"], list)
+
+    def test_spin_text_does_not_corrupt_words_that_contain_a_rule(self):
+        # "mission" is a translation rule; it used to be found inside
+        # "commission", and the endpoint returned "comproject".
+        response = client.post(
+            "/spin-text",
+            json={
+                "text": "Earned a commission on $1M in sales",
+                "targetStage": "early_stage",
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["spun"] == "Earned a commission on $1M in sales"
+
+    def test_spin_text_does_not_recast_tactical_work_as_strategic(self):
+        response = client.post(
+            "/spin-text",
+            json={
+                "text": "Planned tactical exercises",
+                "targetStage": "enterprise",
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["spun"] == "Planned tactical exercises"

@@ -44,3 +44,62 @@ def test_get_examples_for_all_stages():
         for ex in examples:
             assert "before" in ex
             assert "after" in ex
+
+
+def test_spin_text_matches_whole_phrases_only():
+    # "mission" is a rule, but it must not be found inside "commission".
+    result = SpinningStrategy.spin_text(
+        "Earned a commission on $1M in sales", CompanyStage.EARLY_STAGE
+    )
+    assert result["spun"] == "Earned a commission on $1M in sales"
+    assert result["changes"] == []
+
+    # ...while a whole-word occurrence is translated, with capitalisation kept.
+    result = SpinningStrategy.spin_text("Led the Mission", CompanyStage.EARLY_STAGE)
+    assert result["spun"] == "Led the Project"
+    assert [c["original"] for c in result["changes"]] == ["Mission"]
+
+
+@pytest.mark.parametrize(
+    "text, preserved",
+    [
+        ("Planned tactical exercises", "tactical exercises"),
+        ("Served under command of", "under command of"),
+    ],
+)
+def test_spin_text_does_not_change_the_nature_of_the_work(text, preserved):
+    # This module adapts language "without fabrication". These used to become
+    # "strategic exercises" and "leadership", each claiming a different kind of
+    # work than the one described.
+    result = SpinningStrategy.spin_text(text, CompanyStage.ENTERPRISE)
+    assert result["changes"] == []
+    assert result["spun"] == text
+
+
+def test_spin_text_preserves_factual_qualifiers_while_translating_around_them():
+    # "hospice" names the kind of care given; translating it ("response care")
+    # would misstate the work. The surrounding jargon is still translated.
+    result = SpinningStrategy.spin_text(
+        "Led hospice care for families", CompanyStage.ENTERPRISE
+    )
+    assert result["spun"] == "Led hospice care for populations"
+    assert [c["original"] for c in result["changes"]] == ["families"]
+
+
+def test_spin_text_rewrite_does_not_depend_on_stage():
+    # The rewrite is stage-neutral on purpose; only the guidance differs. The
+    # response used to describe a shared rewrite as stage-specific.
+    text = "Led hospice care for families"
+    early = SpinningStrategy.spin_text(text, CompanyStage.EARLY_STAGE)
+    enterprise = SpinningStrategy.spin_text(text, CompanyStage.ENTERPRISE)
+
+    assert early["spun"] == enterprise["spun"]
+    assert early["explanation"] != enterprise["explanation"]
+    for change in early["changes"] + enterprise["changes"]:
+        assert "early_stage" not in change["reason"]
+        assert "enterprise" not in change["reason"]
+
+
+def test_spin_text_rejects_unknown_stage():
+    with pytest.raises(ValueError):
+        SpinningStrategy.spin_text("text", "not_a_stage")
