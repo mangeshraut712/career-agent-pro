@@ -171,16 +171,22 @@ class CompetencyAssessor:
         ])).lower()
         
         competency_scores = []
+        # Weights come from the raw competency scores. The rounded "weightage"
+        # on each competency is for display: three equal weights of 33.3 sum to
+        # 99.9, and using them as exact turned a perfect match into 99%.
+        competencies = jd_assessment.get("competencies", [])
+        total_raw_score = sum(comp.get("score", 0) for comp in competencies)
+        weights = [
+            (comp.get("score", 0) / total_raw_score) if total_raw_score > 0 else 0.0
+            for comp in competencies
+        ]
         
-        for comp in jd_assessment.get("competencies", []):
-            # Score only the terms this job description actually uses.
-            # Dividing by the full static catalog keeps a Python-only role
-            # near zero even when the candidate has Python.
-            keywords = [
-                kw
-                for kw in (comp.get("keywords_found") or [])
-                if isinstance(kw, str) and kw.strip()
-            ]
+        for comp, weight in zip(competencies, weights):
+            # Score only the terms this job description actually uses. The
+            # old formula divided by the full static catalog and scaled by
+            # 1.5, so a Python-only role stayed near zero even when the
+            # candidate had Python.
+            keywords = comp.get("keywords_found") or []
             matches = sum(1 for kw in keywords if term_in_text(user_text, kw))
             total_keywords = len(keywords)
 
@@ -195,20 +201,20 @@ class CompetencyAssessor:
                 "your_score": score,
                 "matched_keywords": matches,
                 "total_keywords": total_keywords,
-                "gap": max(0, 100 - score)
+                "gap": max(0, 100 - score),
             })
         
-        # Calculate weighted overall fit
+        # Weighted overall fit, normalised by the raw scores and rounded once.
         if competency_scores:
             overall_fit = sum(
-                cs["your_score"] * (cs["weightage"] / 100)
-                for cs in competency_scores
+                cs["your_score"] * weight
+                for cs, weight in zip(competency_scores, weights)
             )
         else:
             overall_fit = 0
         
         return {
-            "overall_fit": int(overall_fit),
+            "overall_fit": int(round(overall_fit)),
             "competency_scores": competency_scores,
             "top_strengths": sorted(competency_scores, key=lambda x: x["your_score"], reverse=True)[:3],
             "top_gaps": sorted(competency_scores, key=lambda x: x["gap"], reverse=True)[:3]
