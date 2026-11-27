@@ -67,3 +67,48 @@ def test_jd_assessor_assess_empty_profile():
 
     assessment_none = JDAssessor.assess(None, None)
     assert assessment_none.fit_score == 0
+
+
+@pytest.mark.parametrize(
+    "text, term",
+    [
+        # Whole-term matching must not be narrower than the substring search it
+        # replaced: a posting that says "mentoring" is asking for mentoring.
+        ("You'll be mentoring junior engineers", "mentor"),
+        ("mentored new hires", "mentor"),
+        ("coaching new hires", "coach"),
+        ("coached the team", "coach"),
+        ("coaches across the org", "coach"),
+        ("leading a team", "lead"),
+        ("managed a budget", "manage"),
+        ("managing stakeholders", "manage"),
+        ("Join our bootstrapped software company", "bootstrap"),
+        ("bootstrapping the team", "bootstrap"),
+        ("shipping weekly", "ship"),
+        ("shipped the feature", "ship"),
+        ("launched the product", "launch"),
+        ("planning the roadmap", "plan"),
+        ("stopped the rollout", "stop"),
+        ("overseeing delivery", "oversee"),
+        ("agreeing on scope", "agree"),
+    ],
+)
+def test_term_in_text_matches_regular_inflections(text, term):
+    assert term_in_text(text, term) is True
+
+
+@pytest.mark.parametrize(
+    "text, term",
+    [
+        # ...but a shared stem is still not a match.
+        ("Must write javascript code", "java"),
+        ("Strong relationship building skills", "ship"),
+        ("a misleading title", "lead"),
+        ("employee management", "manage"),
+        ("seeding the database", "see"),
+        ("regrown from cuttings", "grow"),
+        ("10-15 years of experience", "0-1"),
+    ],
+)
+def test_term_in_text_still_rejects_shared_stems(text, term):
+    assert term_in_text(text, term) is False

@@ -29,3 +29,22 @@ def test_ship_does_not_match_inside_relationship():
     keywords = JDAssessor.COMPETENCY_AREAS["execution"]["keywords"]
     base = JDAssessor.COMPETENCY_AREAS["execution"]["weight"]
     assert weights["execution"] == pytest.approx(base * (1 / len(keywords)))
+
+
+def test_inflected_leadership_terms_still_earn_leadership_slots():
+    # The posting asks for mentoring and coaching. Whole-term matching used to
+    # accept only "mentor" and "coach", so neither counted and leadership got a
+    # weight of zero: with "launch" the only exact match, all 13 slots went to
+    # execution instead of being shared with leadership.
+    job_description = (
+        "Help us launch a new platform. You'll be mentoring junior engineers "
+        "and coaching new hires."
+    )
+    weights = BulletLibrary._compute_competency_weights(job_description)
+    assert weights["leadership"] > 0
+    assert weights["execution"] > 0
+
+    distribution = BulletLibrary._calculate_distribution(weights, 13)
+    assert distribution["leadership"] > 0, distribution
+    assert distribution["execution"] > 0, distribution
+    assert sum(distribution.values()) == 13
