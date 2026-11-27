@@ -373,13 +373,37 @@ Body: {
 Response:
 {
   "ats_score": 85,
+  "score_breakdown": {
+    "skills_match": 85,
+    "experience_relevance": 80,
+    "keyword_density": 90,
+    "education": 85,
+    "format_quality": 85
+  },
   "score": 85,
   "feedback": "Strong skill overlap with the role.",
   "tailored_summary": "Engineer focused on Python services.",
   "suggestions": ["Add metrics to the current role"],
-  "section_improvements": {}
+  "section_improvements": {
+    "summary": {
+      "current": "Built analytical engines.",
+      "issues": [],
+      "suggested": "Engineer focused on Python services.",
+      "tips": []
+    }
+  },
+  "enhanced_resume": {
+    "name": "Ada Lovelace",
+    "email": "ada@example.com",
+    "summary": "Engineer focused on Python services.",
+    "experience": [],
+    "education": [],
+    "skills": ["Python"]
+  }
 }
 ```
+
+`score` is a legacy alias of `ats_score`, and `score_breakdown` holds the five sub-scores it is computed from. `section_improvements` has one entry per resume section, and each entry has its own shape: `summary` uses `current`/`issues`/`suggested`/`tips`, `skills` uses `matched`/`missing`/`suggested_additions`, `experience` uses `items`/`general_tips`. `enhanced_resume` is the rewritten resume in the same shape as the `resume_data` you sent.
 
 **[Full API Documentation →](#-api-documentation)**
 
